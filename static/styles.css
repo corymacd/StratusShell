@@ -1,0 +1,278 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #1e1e1e;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Menubar */
+.menubar {
+    background-color: #252526;
+    padding: 10px 20px;
+    border-bottom: 1px solid #3e3e42;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.logo {
+    font-weight: 600;
+    font-size: 16px;
+    margin-right: 20px;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown-btn {
+    background: none;
+    border: none;
+    color: #cccccc;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.dropdown-btn:hover {
+    background-color: #2a2d2e;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #252526;
+    border: 1px solid #3e3e42;
+    min-width: 200px;
+    z-index: 1000;
+}
+
+.dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 10px 15px;
+    color: #cccccc;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dropdown-menu a:hover {
+    background-color: #2a2d2e;
+}
+
+/* Terminal Container */
+#terminal-container {
+    flex: 1;
+    overflow: hidden;
+}
+
+.terminals {
+    display: flex;
+    height: 100%;
+    gap: 2px;
+    background-color: #3e3e42;
+}
+
+.layout-horizontal {
+    flex-direction: row;
+}
+
+.layout-vertical {
+    flex-direction: column;
+}
+
+.layout-grid {
+    flex-wrap: wrap;
+}
+
+.layout-grid .terminal-pane {
+    width: calc(50% - 1px);
+    height: calc(50% - 1px);
+}
+
+/* Terminal Pane */
+.terminal-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #1e1e1e;
+    overflow: hidden;
+}
+
+.terminal-header {
+    background-color: #2d2d30;
+    padding: 8px 15px;
+    border-bottom: 1px solid #3e3e42;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.terminal-title {
+    font-size: 14px;
+    color: #cccccc;
+    outline: none;
+}
+
+.terminal-title:focus {
+    background-color: #3e3e42;
+    padding: 2px 6px;
+}
+
+.terminal-close {
+    background: none;
+    border: none;
+    color: #cccccc;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 8px;
+}
+
+.terminal-close:hover {
+    color: #ff0000;
+}
+
+.terminal-frame {
+    flex: 1;
+    border: none;
+    width: 100%;
+    background-color: #1e1e1e;
+}
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background-color: #2d2d30;
+    padding: 30px;
+    border-radius: 8px;
+    min-width: 400px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+}
+
+.modal-content form label {
+    display: block;
+    margin-bottom: 15px;
+}
+
+.modal-content input,
+.modal-content textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    background-color: #1e1e1e;
+    border: 1px solid #3e3e42;
+    color: #cccccc;
+    font-family: inherit;
+}
+
+.modal-content textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+.modal-actions button {
+    padding: 8px 20px;
+    background-color: #007acc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.modal-actions button[type="button"] {
+    background-color: #3e3e42;
+}
+
+.modal-actions button:hover {
+    opacity: 0.9;
+}
+
+/* Session List */
+.session-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.session-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #3e3e42;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.session-item:hover {
+    background-color: #252526;
+}
+
+.session-info strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.session-info p {
+    font-size: 13px;
+    color: #999;
+}
+
+.modal-success {
+    text-align: center;
+}
+
+.modal-success h2 {
+    color: #4ec9b0;
+    font-size: 32px;
+}
+
+/* Error Toast */
+.error-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #f44336;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 4px;
+    z-index: 3000;
+}

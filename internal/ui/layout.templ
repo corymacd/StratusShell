@@ -1,0 +1,21 @@
+package ui
+
+templ Layout(user string) {
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>StratusShell - {user}</title>
+		<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+		<link rel="stylesheet" href="/static/styles.css"/>
+	</head>
+	<body>
+		@Menubar()
+		<div id="terminal-container" hx-get="/api/layout" hx-trigger="load">
+			<!-- Terminals loaded here -->
+		</div>
+		<div id="modal"></div>
+	</body>
+	</html>
+}
