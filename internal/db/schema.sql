@@ -1,4 +1,6 @@
 -- User preferences
+-- Note: The preferences table uses INTEGER PRIMARY KEY without AUTOINCREMENT.
+-- This is intentional to allow manual ID management or because the 'key' column is the main unique identifier.
 -- Note: The 'id' column uses INTEGER PRIMARY KEY, which in SQLite is an alias for ROWID
 -- and provides auto-incrementing behavior by default. Preferences are accessed via the
 -- unique 'key' field, not by 'id'. The 'id' field is present for relational integrity
