@@ -1,4 +1,5 @@
-* {
+/* CSS Reset - targeted to improve performance */
+html, body, div, nav, button, form, input, textarea, iframe {
     margin: 0;
     padding: 0;
     box-sizing: border-box;

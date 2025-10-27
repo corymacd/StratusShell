@@ -145,7 +145,7 @@ func (s *Server) handleSaveSession(w http.ResponseWriter, r *http.Request) {
 	// Save all current terminals
 	terminals := s.terminalManager.GetTerminals()
 	for i, t := range terminals {
-		if err := s.db.SaveSessionTerminal(sessionID, i, t.Title, "/bin/bash", ""); err != nil {
+		if err := s.db.SaveSessionTerminal(sessionID, i, t.Title, t.Shell, t.WorkingDir); err != nil {
 			log.Printf("Warning: failed to save terminal %d: %v", t.ID, err)
 		}
 	}
@@ -209,7 +209,9 @@ func (s *Server) handleLoadSession(w http.ResponseWriter, r *http.Request) {
 
 	// Now that new terminals are ready, kill old ones
 	for _, t := range oldTerminals {
-		s.terminalManager.KillTerminal(t.ID)
+		if err := s.terminalManager.KillTerminal(t.ID); err != nil {
+			log.Printf("Warning: failed to kill old terminal %d: %v", t.ID, err)
+		}
 	}
 
 	// Update layout

@@ -18,6 +18,8 @@ type Terminal struct {
 	DBID       int // Database primary key
 	Port       int
 	Title      string
+	Shell      string
+	WorkingDir string
 	PID        int
 	Cmd        *exec.Cmd
 	CancelFunc context.CancelFunc
@@ -79,6 +81,8 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 		ID:         terminalID,
 		Port:       port,
 		Title:      title,
+		Shell:      shell,
+		WorkingDir: workingDir,
 		PID:        cmd.Process.Pid,
 		Cmd:        cmd,
 		CancelFunc: cancel,
@@ -133,7 +137,9 @@ func (tm *TerminalManager) KillTerminal(id int) error {
 }
 
 func (tm *TerminalManager) monitorTerminal(terminal *Terminal) {
-	terminal.Cmd.Wait()
+	if err := terminal.Cmd.Wait(); err != nil {
+		log.Printf("Terminal %d process exited with error: %v", terminal.ID, err)
+	}
 
 	// If process died unexpectedly, clean up in memory only
 	// KillTerminal handles database cleanup to avoid race conditions

@@ -38,7 +38,6 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
-	serveCmd.Flags().StringP("user", "u", "", "Run as specific user (when started by root)")
 	serveCmd.Flags().IntP("port", "p", 8080, "HTTP port")
 	serveCmd.Flags().String("db", "", "Database path (default: ~/.stratusshell/data.db)")
 }

@@ -1,4 +1,7 @@
 -- User preferences
+-- Note: id uses INTEGER PRIMARY KEY without AUTOINCREMENT because preferences
+-- are accessed via the unique 'key' field, not by id. The id field is for
+-- relational integrity only and doesn't need auto-increment behavior.
 CREATE TABLE IF NOT EXISTS preferences (
     id INTEGER PRIMARY KEY,
     key TEXT UNIQUE NOT NULL,
