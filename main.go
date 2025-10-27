@@ -111,7 +111,7 @@ func startGoTTYServer(ctx context.Context, port int, title string) {
 	}
 
 	// Run server
-	err = srv.Run(ctx, server.WithGracefullContext(ctx))
+	err = srv.Run(ctx, server.WithGracefulContext(ctx))
 	if err != nil {
 		log.Printf("GoTTY server error for %s: %v", title, err)
 	}
