@@ -1,4 +1,4 @@
-/* CSS Reset - targeted to improve performance */
+/* CSS Reset - normalize default browser styles */
 html, body, div, nav, button, form, input, textarea, iframe {
     margin: 0;
     padding: 0;
