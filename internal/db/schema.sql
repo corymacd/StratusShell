@@ -1,7 +1,8 @@
 -- User preferences
--- Note: id uses INTEGER PRIMARY KEY without AUTOINCREMENT because preferences
--- are accessed via the unique 'key' field, not by id. The id field is for
--- relational integrity only and doesn't need auto-increment behavior.
+-- Note: The 'id' column uses INTEGER PRIMARY KEY, which in SQLite is an alias for ROWID
+-- and provides auto-incrementing behavior by default. Preferences are accessed via the
+-- unique 'key' field, not by 'id'. The 'id' field is present for relational integrity
+-- (e.g., if foreign keys reference this table); if not needed, it can be removed.
 CREATE TABLE IF NOT EXISTS preferences (
     id INTEGER PRIMARY KEY,
     key TEXT UNIQUE NOT NULL,
