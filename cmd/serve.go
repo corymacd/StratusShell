@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/corymacd/cloud-dev-cli-env/internal/server"
+	"github.com/corymacd/StratusShell/internal/server"
 	"github.com/spf13/cobra"
 )
 

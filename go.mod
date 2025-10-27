@@ -1,4 +1,4 @@
-module github.com/corymacd/cloud-dev-cli-env
+module github.com/corymacd/StratusShell
 
 go 1.24.7
 

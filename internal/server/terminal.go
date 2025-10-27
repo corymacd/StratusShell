@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/corymacd/cloud-dev-cli-env/internal/db"
+	"github.com/corymacd/StratusShell/internal/db"
 )
 
 type Terminal struct {

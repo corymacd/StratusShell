@@ -15,10 +15,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/corymacd/cloud-dev-cli-env/internal/audit"
-	"github.com/corymacd/cloud-dev-cli-env/internal/db"
-	"github.com/corymacd/cloud-dev-cli-env/internal/middleware"
-	"github.com/corymacd/cloud-dev-cli-env/internal/ui"
+	"github.com/corymacd/StratusShell/internal/audit"
+	"github.com/corymacd/StratusShell/internal/db"
+	"github.com/corymacd/StratusShell/internal/middleware"
+	"github.com/corymacd/StratusShell/internal/ui"
 )
 
 type Server struct {

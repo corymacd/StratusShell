@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/corymacd/cloud-dev-cli-env/internal/audit"
-	"github.com/corymacd/cloud-dev-cli-env/internal/ui"
-	"github.com/corymacd/cloud-dev-cli-env/internal/validation"
+	"github.com/corymacd/StratusShell/internal/audit"
+	"github.com/corymacd/StratusShell/internal/ui"
+	"github.com/corymacd/StratusShell/internal/validation"
 )
 
 // getActor extracts the authenticated user from request context
@@ -167,7 +167,10 @@ func (s *Server) handleSaveSessionModal(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleSaveSession(w http.ResponseWriter, r *http.Request) {
 	actor := s.getActor(r)
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		s.handleError(w, r, err, "Failed to parse form")
+		return
+	}
 	name := validation.SanitizeString(r.FormValue("name"))
 	description := validation.SanitizeString(r.FormValue("description"))
 
