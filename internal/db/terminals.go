@@ -17,11 +17,15 @@ type ActiveLayout struct {
 	TerminalCount int
 }
 
-func (db *DB) SaveActiveTerminal(port int, title string, pid int) error {
-	_, err := db.conn.Exec(`
+func (db *DB) SaveActiveTerminal(port int, title string, pid int) (int, error) {
+	result, err := db.conn.Exec(`
 		INSERT INTO active_terminals (port, title, pid) VALUES (?, ?, ?)
 	`, port, title, pid)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	id, err := result.LastInsertId()
+	return int(id), err
 }
 
 func (db *DB) GetActiveTerminals() ([]*ActiveTerminal, error) {
@@ -43,6 +47,11 @@ func (db *DB) GetActiveTerminals() ([]*ActiveTerminal, error) {
 		terminals = append(terminals, t)
 	}
 	return terminals, rows.Err()
+}
+
+func (db *DB) UpdateActiveTerminalTitle(id int, title string) error {
+	_, err := db.conn.Exec("UPDATE active_terminals SET title = ? WHERE id = ?", title, id)
+	return err
 }
 
 func (db *DB) DeleteActiveTerminal(id int) error {

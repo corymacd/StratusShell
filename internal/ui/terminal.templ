@@ -5,19 +5,18 @@ import "fmt"
 templ TerminalPane(id int, port int, title string) {
 	<div class="terminal-pane" id={ fmt.Sprintf("terminal-%d", id) }>
 		<div class="terminal-header">
-			<span class="terminal-title" contenteditable="true"
-				hx-post={ fmt.Sprintf("/api/terminal/%d/rename", id) }
-				hx-trigger="blur"
-				hx-include="this"
-				hx-swap="none">
-				{ title }
-			</span>
+			<form hx-post={ fmt.Sprintf("/api/terminal/%d/rename", id) }
+				hx-trigger="blur from:[name='title']"
+				hx-swap="none"
+				class="terminal-title-form">
+				<input type="text" name="title" value={ title } class="terminal-title"/>
+			</form>
 			<button class="terminal-close"
 				hx-delete={ fmt.Sprintf("/api/terminal/%d", id) }
 				hx-target={ fmt.Sprintf("#terminal-%d", id) }
 				hx-swap="outerHTML">×</button>
 		</div>
-		<iframe src={ fmt.Sprintf("http://localhost:%d", port) } class="terminal-frame"></iframe>
+		<iframe src={ fmt.Sprintf("/term/%d/", port) } class="terminal-frame"></iframe>
 	</div>
 }
 

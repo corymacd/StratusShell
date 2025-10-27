@@ -15,6 +15,7 @@ import (
 
 type Terminal struct {
 	ID         int
+	DBID       int // Database primary key
 	Port       int
 	Title      string
 	PID        int
@@ -84,14 +85,17 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 		CreatedAt:  time.Now(),
 	}
 
+	// Save to database
+	dbID, err := tm.db.SaveActiveTerminal(terminal.Port, terminal.Title, terminal.PID)
+	if err != nil {
+		log.Printf("Warning: failed to save terminal to db: %v", err)
+	} else {
+		terminal.DBID = dbID
+	}
+
 	tm.mu.Lock()
 	tm.terminals[terminal.ID] = terminal
 	tm.mu.Unlock()
-
-	// Save to database
-	if err := tm.db.SaveActiveTerminal(terminal.Port, terminal.Title, terminal.PID); err != nil {
-		log.Printf("Warning: failed to save terminal to db: %v", err)
-	}
 
 	// Monitor process
 	go tm.monitorTerminal(terminal)
@@ -118,9 +122,11 @@ func (tm *TerminalManager) KillTerminal(id int) error {
 	// Release port
 	tm.portPool.Release(terminal.Port)
 
-	// Remove from database
-	if err := tm.db.DeleteActiveTerminal(id); err != nil {
-		log.Printf("Warning: failed to delete terminal from db: %v", err)
+	// Remove from database using the correct database ID
+	if terminal.DBID > 0 {
+		if err := tm.db.DeleteActiveTerminal(terminal.DBID); err != nil {
+			log.Printf("Warning: failed to delete terminal from db: %v", err)
+		}
 	}
 
 	return nil
@@ -129,13 +135,16 @@ func (tm *TerminalManager) KillTerminal(id int) error {
 func (tm *TerminalManager) monitorTerminal(terminal *Terminal) {
 	terminal.Cmd.Wait()
 
-	// If process died unexpectedly, clean up
+	// If process died unexpectedly, clean up in memory only
+	// KillTerminal handles database cleanup to avoid race conditions
 	tm.mu.Lock()
 	if _, exists := tm.terminals[terminal.ID]; exists {
+		log.Printf("Terminal %d (port %d) died unexpectedly, cleaning up", terminal.ID, terminal.Port)
 		delete(tm.terminals, terminal.ID)
 		tm.portPool.Release(terminal.Port)
-		tm.db.DeleteActiveTerminal(terminal.ID)
-		log.Printf("Terminal %d (port %d) died unexpectedly", terminal.ID, terminal.Port)
+		// Note: Database cleanup is intentionally NOT done here to prevent
+		// race conditions with KillTerminal. For unexpected deaths, the stale
+		// DB record will be cleaned on next server start.
 	}
 	tm.mu.Unlock()
 }

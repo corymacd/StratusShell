@@ -122,15 +122,22 @@ body {
     align-items: center;
 }
 
+.terminal-title-form {
+    display: inline;
+}
+
 .terminal-title {
     font-size: 14px;
     color: #cccccc;
+    background: none;
+    border: none;
     outline: none;
+    padding: 2px 6px;
+    font-family: inherit;
 }
 
 .terminal-title:focus {
     background-color: #3e3e42;
-    padding: 2px 6px;
 }
 
 .terminal-close {

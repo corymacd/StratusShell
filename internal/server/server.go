@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -50,8 +54,11 @@ func NewServer(port int, dbPath string) (*Server, error) {
 }
 
 func (s *Server) setupRoutes(mux *http.ServeMux) {
-	// Static files
-	mux.Handle("/static/", http.FileServer(http.Dir(".")))
+	// Static files - only serve from static/ directory
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
+	// Terminal proxy - forwards /term/{port}/ to http://localhost:{port}/
+	mux.HandleFunc("/term/", s.handleTerminalProxy)
 
 	// Main page
 	mux.HandleFunc("/", s.handleIndex)
@@ -139,4 +146,36 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	// Render layout
 	ui.Layout(user).Render(r.Context(), w)
+}
+
+func (s *Server) handleTerminalProxy(w http.ResponseWriter, r *http.Request) {
+	// Extract port from path: /term/{port}/...
+	path := strings.TrimPrefix(r.URL.Path, "/term/")
+	parts := strings.Split(path, "/")
+	if len(parts) == 0 || parts[0] == "" {
+		http.Error(w, "Invalid terminal port", http.StatusBadRequest)
+		return
+	}
+
+	port, err := strconv.Atoi(parts[0])
+	if err != nil {
+		http.Error(w, "Invalid terminal port", http.StatusBadRequest)
+		return
+	}
+
+	// Create reverse proxy to localhost:{port}
+	target, err := url.Parse(fmt.Sprintf("http://localhost:%d", port))
+	if err != nil {
+		http.Error(w, "Invalid proxy target", http.StatusInternalServerError)
+		return
+	}
+
+	// Strip /term/{port} prefix and proxy to target
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	r.URL.Path = strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/term/%d", port))
+	if r.URL.Path == "" {
+		r.URL.Path = "/"
+	}
+
+	proxy.ServeHTTP(w, r)
 }

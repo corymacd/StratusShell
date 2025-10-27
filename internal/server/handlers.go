@@ -90,8 +90,12 @@ func (s *Server) handleTerminalAction(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPost:
 		if len(parts) > 1 && parts[1] == "rename" {
-			r.ParseForm()
-			newTitle := r.FormValue("title")
+			// Parse form data
+			if err := r.ParseForm(); err != nil {
+				s.handleError(w, r, err, "Failed to parse form")
+				return
+			}
+			newTitle := strings.TrimSpace(r.FormValue("title"))
 			if newTitle == "" {
 				http.Error(w, "Title required", http.StatusBadRequest)
 				return
@@ -104,6 +108,14 @@ func (s *Server) handleTerminalAction(w http.ResponseWriter, r *http.Request) {
 			}
 
 			terminal.Title = newTitle
+
+			// Persist title change to database
+			if terminal.DBID > 0 {
+				if err := s.db.UpdateActiveTerminalTitle(terminal.DBID, newTitle); err != nil {
+					log.Printf("Warning: failed to update terminal title in db: %v", err)
+				}
+			}
+
 			w.WriteHeader(http.StatusOK)
 		}
 	}
@@ -176,20 +188,28 @@ func (s *Server) handleLoadSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Kill all current terminals
-	for _, t := range s.terminalManager.GetTerminals() {
-		s.terminalManager.KillTerminal(t.ID)
+	// Store old terminals to be killed later
+	oldTerminals := s.terminalManager.GetTerminals()
+
+	// Spawn new terminals from session first (transactional approach)
+	newTerminals := make([]*Terminal, 0, len(sessionTerminals))
+	for _, st := range sessionTerminals {
+		term, err := s.terminalManager.SpawnTerminal(st.Title, st.Shell, st.WorkingDir)
+		if err != nil {
+			log.Printf("Error: failed to spawn terminal for session: %v", err)
+			// Rollback: clean up any terminals that were successfully spawned
+			for _, t := range newTerminals {
+				s.terminalManager.KillTerminal(t.ID)
+			}
+			s.handleError(w, r, err, "Failed to spawn new terminals for session")
+			return
+		}
+		newTerminals = append(newTerminals, term)
 	}
 
-	// Clear active terminals table
-	s.db.ClearActiveTerminals()
-
-	// Spawn terminals from session
-	for _, st := range sessionTerminals {
-		_, err := s.terminalManager.SpawnTerminal(st.Title, st.Shell, st.WorkingDir)
-		if err != nil {
-			log.Printf("Warning: failed to spawn terminal: %v", err)
-		}
+	// Now that new terminals are ready, kill old ones
+	for _, t := range oldTerminals {
+		s.terminalManager.KillTerminal(t.ID)
 	}
 
 	// Update layout
