@@ -7,8 +7,18 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/corymacd/cloud-dev-cli-env/internal/audit"
 	"github.com/corymacd/cloud-dev-cli-env/internal/ui"
+	"github.com/corymacd/cloud-dev-cli-env/internal/validation"
 )
+
+// getActor extracts the authenticated user from request context
+func (s *Server) getActor(r *http.Request) string {
+	if user, ok := r.Context().Value(userContextKey).(string); ok {
+		return user
+	}
+	return "unknown"
+}
 
 func (s *Server) handleGetLayout(w http.ResponseWriter, r *http.Request) {
 	terminals := s.terminalManager.GetTerminals()
@@ -44,27 +54,44 @@ func (s *Server) handleLayoutGrid(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) applyLayoutAndRespond(w http.ResponseWriter, r *http.Request, layoutType string) {
+	actor := s.getActor(r)
+
+	// Validate layout type
+	if err := validation.ValidateLayoutType(layoutType); err != nil {
+		s.auditLogger.LogLayoutChange(actor, layoutType, audit.OutcomeFailure, err)
+		s.handleError(w, r, err, "Invalid layout type")
+		return
+	}
+
 	if err := s.terminalManager.ApplyLayout(layoutType); err != nil {
+		s.auditLogger.LogLayoutChange(actor, layoutType, audit.OutcomeFailure, err)
 		s.handleError(w, r, err, "Failed to apply layout")
 		return
 	}
+
+	s.auditLogger.LogLayoutChange(actor, layoutType, audit.OutcomeSuccess, nil)
 	s.handleGetLayout(w, r)
 }
 
 func (s *Server) handleAddTerminal(w http.ResponseWriter, r *http.Request) {
+	actor := s.getActor(r)
 	terminals := s.terminalManager.GetTerminals()
 	title := fmt.Sprintf("Terminal %d", len(terminals)+1)
 
-	_, err := s.terminalManager.SpawnTerminal(title, "/bin/bash", "")
+	terminal, err := s.terminalManager.SpawnTerminal(title, "/bin/bash", "")
 	if err != nil {
+		s.auditLogger.LogTerminalSpawn(actor, -1, title, audit.OutcomeFailure, err)
 		s.handleError(w, r, err, "Failed to add terminal")
 		return
 	}
 
+	s.auditLogger.LogTerminalSpawn(actor, terminal.ID, title, audit.OutcomeSuccess, nil)
 	s.handleGetLayout(w, r)
 }
 
 func (s *Server) handleTerminalAction(w http.ResponseWriter, r *http.Request) {
+	actor := s.getActor(r)
+
 	// Extract terminal ID from path: /api/terminal/{id} or /api/terminal/{id}/rename
 	path := strings.TrimPrefix(r.URL.Path, "/api/terminal/")
 	parts := strings.Split(path, "/")
@@ -80,12 +107,20 @@ func (s *Server) handleTerminalAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate terminal ID
+	if err := validation.ValidateTerminalID(id); err != nil {
+		s.handleError(w, r, err, "Invalid terminal ID")
+		return
+	}
+
 	switch r.Method {
 	case http.MethodDelete:
 		if err := s.terminalManager.KillTerminal(id); err != nil {
+			s.auditLogger.LogTerminalKill(actor, id, audit.OutcomeFailure, err)
 			s.handleError(w, r, err, "Failed to delete terminal")
 			return
 		}
+		s.auditLogger.LogTerminalKill(actor, id, audit.OutcomeSuccess, nil)
 		w.WriteHeader(http.StatusOK)
 
 	case http.MethodPost:
@@ -95,9 +130,12 @@ func (s *Server) handleTerminalAction(w http.ResponseWriter, r *http.Request) {
 				s.handleError(w, r, err, "Failed to parse form")
 				return
 			}
-			newTitle := strings.TrimSpace(r.FormValue("title"))
-			if newTitle == "" {
-				http.Error(w, "Title required", http.StatusBadRequest)
+			newTitle := validation.SanitizeString(r.FormValue("title"))
+
+			// Validate title
+			if err := validation.ValidateTerminalTitle(newTitle); err != nil {
+				s.auditLogger.LogTerminalRename(actor, id, "", newTitle, audit.OutcomeFailure, err)
+				s.handleError(w, r, err, "Invalid terminal title")
 				return
 			}
 
@@ -107,6 +145,7 @@ func (s *Server) handleTerminalAction(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			oldTitle := terminal.Title
 			terminal.Title = newTitle
 
 			// Persist title change to database
@@ -116,6 +155,7 @@ func (s *Server) handleTerminalAction(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			s.auditLogger.LogTerminalRename(actor, id, oldTitle, newTitle, audit.OutcomeSuccess, nil)
 			w.WriteHeader(http.StatusOK)
 		}
 	}
@@ -126,18 +166,28 @@ func (s *Server) handleSaveSessionModal(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) handleSaveSession(w http.ResponseWriter, r *http.Request) {
+	actor := s.getActor(r)
 	r.ParseForm()
-	name := r.FormValue("name")
-	description := r.FormValue("description")
+	name := validation.SanitizeString(r.FormValue("name"))
+	description := validation.SanitizeString(r.FormValue("description"))
 
-	if name == "" {
-		s.handleError(w, r, fmt.Errorf("name required"), "Session name is required")
+	// Validate inputs
+	if err := validation.ValidateSessionName(name); err != nil {
+		s.auditLogger.LogSessionCreate(actor, -1, name, audit.OutcomeFailure, err)
+		s.handleError(w, r, err, "Invalid session name")
+		return
+	}
+
+	if err := validation.ValidateSessionDescription(description); err != nil {
+		s.auditLogger.LogSessionCreate(actor, -1, name, audit.OutcomeFailure, err)
+		s.handleError(w, r, err, "Invalid session description")
 		return
 	}
 
 	// Create session
 	sessionID, err := s.db.CreateSession(name, description)
 	if err != nil {
+		s.auditLogger.LogSessionCreate(actor, -1, name, audit.OutcomeFailure, err)
 		s.handleError(w, r, err, "Failed to save session")
 		return
 	}
@@ -150,6 +200,7 @@ func (s *Server) handleSaveSession(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	s.auditLogger.LogSessionCreate(actor, sessionID, name, audit.OutcomeSuccess, nil)
 	ui.SuccessMessage("Session saved successfully").Render(r.Context(), w)
 }
 
@@ -173,6 +224,8 @@ func (s *Server) handleListSessionsModal(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) handleLoadSession(w http.ResponseWriter, r *http.Request) {
+	actor := s.getActor(r)
+
 	// Extract session ID
 	path := strings.TrimPrefix(r.URL.Path, "/api/session/load/")
 	sessionID, err := strconv.Atoi(path)
@@ -181,9 +234,17 @@ func (s *Server) handleLoadSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate session ID
+	if err := validation.ValidateSessionID(sessionID); err != nil {
+		s.auditLogger.LogSessionLoad(actor, sessionID, audit.OutcomeFailure, err)
+		s.handleError(w, r, err, "Invalid session ID")
+		return
+	}
+
 	// Get session terminals
 	sessionTerminals, err := s.db.GetSessionTerminals(sessionID)
 	if err != nil {
+		s.auditLogger.LogSessionLoad(actor, sessionID, audit.OutcomeFailure, err)
 		s.handleError(w, r, err, "Failed to load session")
 		return
 	}
@@ -201,6 +262,7 @@ func (s *Server) handleLoadSession(w http.ResponseWriter, r *http.Request) {
 			for _, t := range newTerminals {
 				s.terminalManager.KillTerminal(t.ID)
 			}
+			s.auditLogger.LogSessionLoad(actor, sessionID, audit.OutcomeFailure, err)
 			s.handleError(w, r, err, "Failed to spawn new terminals for session")
 			return
 		}
@@ -221,7 +283,63 @@ func (s *Server) handleLoadSession(w http.ResponseWriter, r *http.Request) {
 	}
 	s.db.UpdateActiveLayout(layoutType, len(sessionTerminals))
 
+	s.auditLogger.LogSessionLoad(actor, sessionID, audit.OutcomeSuccess, nil)
 	s.handleGetLayout(w, r)
+}
+
+func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+	// Get current system user
+	user := r.URL.Query().Get("user")
+	if user == "" {
+		user = "anonymous"
+	}
+
+	// Create session
+	token, err := s.authManager.CreateSession(user)
+	if err != nil {
+		s.auditLogger.LogAuthLogin(user, audit.OutcomeFailure, err)
+		s.handleError(w, r, err, "Failed to create session")
+		return
+	}
+
+	// Set session cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   86400, // 24 hours
+	})
+
+	s.auditLogger.LogAuthLogin(user, audit.OutcomeSuccess, nil)
+
+	// Redirect to home
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	actor := s.getActor(r)
+
+	// Get session cookie
+	cookie, err := r.Cookie("session_token")
+	if err == nil {
+		s.authManager.DeleteSession(cookie.Value)
+	}
+
+	// Clear cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
+
+	s.auditLogger.LogAuthLogout(actor, audit.OutcomeSuccess)
+
+	// Redirect to login
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func (s *Server) handleError(w http.ResponseWriter, r *http.Request, err error, userMsg string) {

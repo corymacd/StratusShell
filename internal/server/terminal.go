@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -20,6 +22,7 @@ type Terminal struct {
 	Title      string
 	Shell      string
 	WorkingDir string
+	Credential string // GoTTY authentication credential
 	PID        int
 	Cmd        *exec.Cmd
 	CancelFunc context.CancelFunc
@@ -43,15 +46,34 @@ func NewTerminalManager(db *db.DB) *TerminalManager {
 	}
 }
 
+// generateCredential creates a random credential for GoTTY authentication
+func generateCredential() (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	// Format as username:password
+	username := "term"
+	password := base64.URLEncoding.EncodeToString(b)
+	return fmt.Sprintf("%s:%s", username, password), nil
+}
+
 func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Terminal, error) {
 	port, err := tm.portPool.Allocate()
 	if err != nil {
 		return nil, fmt.Errorf("failed to allocate port: %w", err)
 	}
 
+	// Generate authentication credential
+	credential, err := generateCredential()
+	if err != nil {
+		tm.portPool.Release(port)
+		return nil, fmt.Errorf("failed to generate credential: %w", err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Build GoTTY command
+	// Build GoTTY command with authentication
 	cmd := exec.CommandContext(ctx, "gotty",
 		"--port", strconv.Itoa(port),
 		"--address", "localhost",
@@ -59,6 +81,7 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 		"--reconnect",
 		"--reconnect-time", "10",
 		"--title-format", title,
+		"--credential", credential, // Add authentication
 		shell,
 	)
 
@@ -83,6 +106,7 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 		Title:      title,
 		Shell:      shell,
 		WorkingDir: workingDir,
+		Credential: credential,
 		PID:        cmd.Process.Pid,
 		Cmd:        cmd,
 		CancelFunc: cancel,
@@ -171,6 +195,12 @@ func (tm *TerminalManager) GetTerminal(id int) (*Terminal, bool) {
 	defer tm.mu.RUnlock()
 	t, ok := tm.terminals[id]
 	return t, ok
+}
+
+func (tm *TerminalManager) GetNextID() int {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.nextID
 }
 
 func (tm *TerminalManager) Shutdown() error {

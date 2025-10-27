@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,7 +15,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/corymacd/cloud-dev-cli-env/internal/audit"
 	"github.com/corymacd/cloud-dev-cli-env/internal/db"
+	"github.com/corymacd/cloud-dev-cli-env/internal/middleware"
 	"github.com/corymacd/cloud-dev-cli-env/internal/ui"
 )
 
@@ -22,6 +25,10 @@ type Server struct {
 	port            int
 	db              *db.DB
 	terminalManager *TerminalManager
+	authManager     *AuthManager
+	auditLogger     *audit.Logger
+	rateLimiter     *middleware.RateLimiter
+	csrfProtection  *middleware.CSRFProtection
 	httpServer      *http.Server
 }
 
@@ -35,10 +42,26 @@ func NewServer(port int, dbPath string) (*Server, error) {
 	// Create terminal manager
 	tm := NewTerminalManager(database)
 
+	// Create auth manager
+	am := NewAuthManager()
+
+	// Create audit logger
+	al := audit.NewLogger()
+
+	// Create rate limiter: 100 requests per minute per IP
+	rl := middleware.NewRateLimiter(100, time.Minute)
+
+	// Create CSRF protection
+	csrf := middleware.NewCSRFProtection()
+
 	s := &Server{
 		port:            port,
 		db:              database,
 		terminalManager: tm,
+		authManager:     am,
+		auditLogger:     al,
+		rateLimiter:     rl,
+		csrfProtection:  csrf,
 	}
 
 	// Setup HTTP routes
@@ -57,25 +80,33 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	// Static files - only serve from static/ directory
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	// Terminal proxy - forwards /term/{port}/ to http://localhost:{port}/
-	mux.HandleFunc("/term/", s.handleTerminalProxy)
+	// Health and metrics - public
+	mux.HandleFunc("/health", s.handleHealth)
+	mux.HandleFunc("/metrics", s.handleMetrics)
 
-	// Main page
-	mux.HandleFunc("/", s.handleIndex)
+	// Auth routes - public with rate limiting
+	mux.HandleFunc("/login", s.rateLimiter.Limit(s.handleLogin))
+	mux.HandleFunc("/logout", s.rateLimiter.Limit(s.handleLogout))
 
-	// API routes
-	mux.HandleFunc("/api/layout", s.handleGetLayout)
-	mux.HandleFunc("/api/layout/horizontal", s.handleLayoutHorizontal)
-	mux.HandleFunc("/api/layout/vertical", s.handleLayoutVertical)
-	mux.HandleFunc("/api/layout/grid", s.handleLayoutGrid)
+	// Terminal proxy - requires auth + rate limiting
+	mux.HandleFunc("/term/", s.rateLimiter.Limit(s.AuthMiddleware(s.handleTerminalProxy)))
 
-	mux.HandleFunc("/api/terminals/add", s.handleAddTerminal)
-	mux.HandleFunc("/api/terminal/", s.handleTerminalAction)
+	// Main page - requires auth + rate limiting
+	mux.HandleFunc("/", s.rateLimiter.Limit(s.AuthMiddleware(s.handleIndex)))
 
-	mux.HandleFunc("/api/session/save-modal", s.handleSaveSessionModal)
-	mux.HandleFunc("/api/session/save", s.handleSaveSession)
-	mux.HandleFunc("/api/session/list-modal", s.handleListSessionsModal)
-	mux.HandleFunc("/api/session/load/", s.handleLoadSession)
+	// API routes - all require auth + rate limiting + CSRF protection for state changes
+	mux.HandleFunc("/api/layout", s.rateLimiter.Limit(s.AuthMiddleware(s.handleGetLayout)))
+	mux.HandleFunc("/api/layout/horizontal", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLayoutHorizontal))))
+	mux.HandleFunc("/api/layout/vertical", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLayoutVertical))))
+	mux.HandleFunc("/api/layout/grid", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLayoutGrid))))
+
+	mux.HandleFunc("/api/terminals/add", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleAddTerminal))))
+	mux.HandleFunc("/api/terminal/", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleTerminalAction))))
+
+	mux.HandleFunc("/api/session/save-modal", s.rateLimiter.Limit(s.AuthMiddleware(s.handleSaveSessionModal)))
+	mux.HandleFunc("/api/session/save", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleSaveSession))))
+	mux.HandleFunc("/api/session/list-modal", s.rateLimiter.Limit(s.AuthMiddleware(s.handleListSessionsModal)))
+	mux.HandleFunc("/api/session/load/", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLoadSession))))
 }
 
 func (s *Server) Run() error {
@@ -168,6 +199,21 @@ func (s *Server) handleTerminalProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Find terminal by port to get credential
+	var credential string
+	terminals := s.terminalManager.GetTerminals()
+	for _, t := range terminals {
+		if t.Port == port {
+			credential = t.Credential
+			break
+		}
+	}
+
+	if credential == "" {
+		http.Error(w, "Terminal not found", http.StatusNotFound)
+		return
+	}
+
 	// Create reverse proxy to localhost:{port}
 	target, err := url.Parse(fmt.Sprintf("http://localhost:%d", port))
 	if err != nil {
@@ -177,6 +223,15 @@ func (s *Server) handleTerminalProxy(w http.ResponseWriter, r *http.Request) {
 
 	// Strip /term/{port} prefix and proxy to target
 	proxy := httputil.NewSingleHostReverseProxy(target)
+
+	// Modify request to add Basic Auth header
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		// Add Basic Auth using the terminal's credential
+		req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(credential)))
+	}
+
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/term/%d", port))
 	if r.URL.Path == "" {
 		r.URL.Path = "/"
