@@ -1,4 +1,4 @@
-# cloud-dev-cli-env
+# StratusShell
 
 A web-based dual CLI session streaming application built with Go and GoTTY. This project provides a clean web interface that displays two terminal sessions stacked vertically, allowing you to interact with both simultaneously.
 
@@ -30,8 +30,8 @@ A web-based dual CLI session streaming application built with Go and GoTTY. This
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/corymacd/cloud-dev-cli-env.git
-cd cloud-dev-cli-env
+git clone https://github.com/corymacd/StratusShell.git
+cd StratusShell
 ```
 
 2. Install dependencies:
@@ -41,14 +41,14 @@ go mod download
 
 3. Build the application:
 ```bash
-go build -o cloud-cli-env main.go
+go build -o stratusshell main.go
 ```
 
 ## Usage
 
 1. Run the application:
 ```bash
-./cloud-cli-env
+./stratusshell
 ```
 
 2. Open your web browser and navigate to:

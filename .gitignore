@@ -1,6 +1,6 @@
 # Binaries
-cloud-cli-env
-cloud-cli-env.exe
+stratusshell
+stratusshell.exe
 *.exe
 *.dll
 *.so
