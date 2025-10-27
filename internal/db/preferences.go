@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 func (db *DB) GetPreference(key string) (string, error) {
