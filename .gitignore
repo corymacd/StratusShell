@@ -34,3 +34,7 @@ Thumbs.db
 
 # Temporary files
 /tmp/
+stratusshell
+
+# Templ generated files
+*_templ.go
