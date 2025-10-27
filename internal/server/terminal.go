@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os/exec"
-	"strconv"
 	"sync"
 	"time"
 
@@ -16,17 +14,15 @@ import (
 )
 
 type Terminal struct {
-	ID         int
-	DBID       int // Database primary key
-	Port       int
-	Title      string
-	Shell      string
-	WorkingDir string
-	Credential string // GoTTY authentication credential
-	PID        int
-	Cmd        *exec.Cmd
-	CancelFunc context.CancelFunc
-	CreatedAt  time.Time
+	ID          int
+	DBID        int // Database primary key
+	Port        int
+	Title       string
+	Shell       string
+	WorkingDir  string
+	Credential  string // GoTTY authentication credential
+	GoTTYServer *GoTTYServer
+	CreatedAt   time.Time
 }
 
 type TerminalManager struct {
@@ -71,28 +67,12 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 		return nil, fmt.Errorf("failed to generate credential: %w", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	// Build GoTTY command with authentication
-	cmd := exec.CommandContext(ctx, "gotty",
-		"--port", strconv.Itoa(port),
-		"--address", "localhost",
-		"--permit-write",
-		"--reconnect",
-		"--reconnect-time", "10",
-		"--title-format", title,
-		"--credential", credential, // Add authentication
-		shell,
-	)
-
-	if workingDir != "" {
-		cmd.Dir = workingDir
-	}
-
-	if err := cmd.Start(); err != nil {
-		cancel()
+	// Create GoTTY server using library
+	ctx := context.Background()
+	gottyServer, err := NewGoTTYServer(ctx, port, credential, title, shell, workingDir)
+	if err != nil {
 		tm.portPool.Release(port)
-		return nil, fmt.Errorf("failed to start gotty: %w", err)
+		return nil, fmt.Errorf("failed to start gotty server: %w", err)
 	}
 
 	tm.mu.Lock()
@@ -101,20 +81,18 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 	tm.mu.Unlock()
 
 	terminal := &Terminal{
-		ID:         terminalID,
-		Port:       port,
-		Title:      title,
-		Shell:      shell,
-		WorkingDir: workingDir,
-		Credential: credential,
-		PID:        cmd.Process.Pid,
-		Cmd:        cmd,
-		CancelFunc: cancel,
-		CreatedAt:  time.Now(),
+		ID:          terminalID,
+		Port:        port,
+		Title:       title,
+		Shell:       shell,
+		WorkingDir:  workingDir,
+		Credential:  credential,
+		GoTTYServer: gottyServer,
+		CreatedAt:   time.Now(),
 	}
 
-	// Save to database
-	dbID, err := tm.db.SaveActiveTerminal(ctx, terminal.Port, terminal.Title, terminal.PID)
+	// Save to database (PID is 0 since we're using library, not external process)
+	dbID, err := tm.db.SaveActiveTerminal(ctx, terminal.Port, terminal.Title, 0)
 	if err != nil {
 		log.Printf("Warning: failed to save terminal to db: %v", err)
 	} else {
@@ -124,9 +102,6 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 	tm.mu.Lock()
 	tm.terminals[terminal.ID] = terminal
 	tm.mu.Unlock()
-
-	// Monitor process
-	go tm.monitorTerminal(terminal)
 
 	return terminal, nil
 }
@@ -141,11 +116,10 @@ func (tm *TerminalManager) KillTerminal(id int) error {
 	delete(tm.terminals, id)
 	tm.mu.Unlock()
 
-	// Cancel context (kills GoTTY)
-	terminal.CancelFunc()
-
-	// Wait for process to exit
-	terminal.Cmd.Wait()
+	// Stop GoTTY server gracefully
+	if err := terminal.GoTTYServer.Stop(); err != nil {
+		log.Printf("Warning: error stopping GoTTY server: %v", err)
+	}
 
 	// Release port
 	tm.portPool.Release(terminal.Port)
@@ -158,25 +132,6 @@ func (tm *TerminalManager) KillTerminal(id int) error {
 	}
 
 	return nil
-}
-
-func (tm *TerminalManager) monitorTerminal(terminal *Terminal) {
-	if err := terminal.Cmd.Wait(); err != nil {
-		log.Printf("Terminal %d process exited with error: %v", terminal.ID, err)
-	}
-
-	// If process died unexpectedly, clean up in memory only
-	// KillTerminal handles database cleanup to avoid race conditions
-	tm.mu.Lock()
-	if _, exists := tm.terminals[terminal.ID]; exists {
-		log.Printf("Terminal %d (port %d) died unexpectedly, cleaning up", terminal.ID, terminal.Port)
-		delete(tm.terminals, terminal.ID)
-		tm.portPool.Release(terminal.Port)
-		// Note: Database cleanup is intentionally NOT done here to prevent
-		// race conditions with KillTerminal. For unexpected deaths, the stale
-		// DB record will be cleaned on next server start.
-	}
-	tm.mu.Unlock()
 }
 
 func (tm *TerminalManager) GetTerminals() []*Terminal {
