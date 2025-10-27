@@ -22,7 +22,7 @@ func (s *Server) getActor(r *http.Request) string {
 
 func (s *Server) handleGetLayout(w http.ResponseWriter, r *http.Request) {
 	terminals := s.terminalManager.GetTerminals()
-	layout, err := s.db.GetActiveLayout()
+	layout, err := s.db.GetActiveLayout(r.Context())
 	if err != nil {
 		s.handleError(w, r, err, "Failed to get layout")
 		return
@@ -150,7 +150,7 @@ func (s *Server) handleTerminalAction(w http.ResponseWriter, r *http.Request) {
 
 			// Persist title change to database
 			if terminal.DBID > 0 {
-				if err := s.db.UpdateActiveTerminalTitle(terminal.DBID, newTitle); err != nil {
+				if err := s.db.UpdateActiveTerminalTitle(r.Context(), terminal.DBID, newTitle); err != nil {
 					log.Printf("Warning: failed to update terminal title in db: %v", err)
 				}
 			}
@@ -185,7 +185,7 @@ func (s *Server) handleSaveSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create session
-	sessionID, err := s.db.CreateSession(name, description)
+	sessionID, err := s.db.CreateSession(r.Context(), name, description)
 	if err != nil {
 		s.auditLogger.LogSessionCreate(actor, -1, name, audit.OutcomeFailure, err)
 		s.handleError(w, r, err, "Failed to save session")
@@ -195,7 +195,7 @@ func (s *Server) handleSaveSession(w http.ResponseWriter, r *http.Request) {
 	// Save all current terminals
 	terminals := s.terminalManager.GetTerminals()
 	for i, t := range terminals {
-		if err := s.db.SaveSessionTerminal(sessionID, i, t.Title, t.Shell, t.WorkingDir); err != nil {
+		if err := s.db.SaveSessionTerminal(r.Context(), sessionID, i, t.Title, t.Shell, t.WorkingDir); err != nil {
 			log.Printf("Warning: failed to save terminal %d: %v", t.ID, err)
 		}
 	}
@@ -205,7 +205,7 @@ func (s *Server) handleSaveSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListSessionsModal(w http.ResponseWriter, r *http.Request) {
-	sessions, err := s.db.GetAllSessions()
+	sessions, err := s.db.GetAllSessions(r.Context())
 	if err != nil {
 		s.handleError(w, r, err, "Failed to load sessions")
 		return
@@ -242,7 +242,7 @@ func (s *Server) handleLoadSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get session terminals
-	sessionTerminals, err := s.db.GetSessionTerminals(sessionID)
+	sessionTerminals, err := s.db.GetSessionTerminals(r.Context(), sessionID)
 	if err != nil {
 		s.auditLogger.LogSessionLoad(actor, sessionID, audit.OutcomeFailure, err)
 		s.handleError(w, r, err, "Failed to load session")
@@ -281,7 +281,7 @@ func (s *Server) handleLoadSession(w http.ResponseWriter, r *http.Request) {
 	if len(sessionTerminals) > 2 {
 		layoutType = "grid"
 	}
-	s.db.UpdateActiveLayout(layoutType, len(sessionTerminals))
+	s.db.UpdateActiveLayout(r.Context(), layoutType, len(sessionTerminals))
 
 	s.auditLogger.LogSessionLoad(actor, sessionID, audit.OutcomeSuccess, nil)
 	s.handleGetLayout(w, r)

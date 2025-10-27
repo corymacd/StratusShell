@@ -70,7 +70,3 @@ func (db *DB) Close() error {
 func (db *DB) Ping() error {
 	return db.conn.Ping()
 }
-
-func (db *DB) GetConn() *sql.DB {
-	return db.conn
-}

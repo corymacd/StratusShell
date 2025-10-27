@@ -56,7 +56,7 @@ type MetricsStatus struct {
 // handleMetrics returns basic metrics
 func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	// Get total sessions from database
-	sessions, err := s.db.GetAllSessions()
+	sessions, err := s.db.GetAllSessions(r.Context())
 	totalSessions := 0
 	if err == nil {
 		totalSessions = len(sessions)

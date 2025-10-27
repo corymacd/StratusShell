@@ -114,7 +114,7 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 	}
 
 	// Save to database
-	dbID, err := tm.db.SaveActiveTerminal(terminal.Port, terminal.Title, terminal.PID)
+	dbID, err := tm.db.SaveActiveTerminal(ctx, terminal.Port, terminal.Title, terminal.PID)
 	if err != nil {
 		log.Printf("Warning: failed to save terminal to db: %v", err)
 	} else {
@@ -152,7 +152,7 @@ func (tm *TerminalManager) KillTerminal(id int) error {
 
 	// Remove from database using the correct database ID
 	if terminal.DBID > 0 {
-		if err := tm.db.DeleteActiveTerminal(terminal.DBID); err != nil {
+		if err := tm.db.DeleteActiveTerminal(context.Background(), terminal.DBID); err != nil {
 			log.Printf("Warning: failed to delete terminal from db: %v", err)
 		}
 	}
@@ -248,7 +248,7 @@ func (tm *TerminalManager) ApplyLayout(layoutType string) error {
 	}
 
 	// Update layout in DB
-	if err := tm.db.UpdateActiveLayout(layoutType, targetCount); err != nil {
+	if err := tm.db.UpdateActiveLayout(context.Background(), layoutType, targetCount); err != nil {
 		return fmt.Errorf("failed to update layout in db: %w", err)
 	}
 

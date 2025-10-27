@@ -155,12 +155,14 @@ func (s *Server) Shutdown() error {
 }
 
 func (s *Server) restoreTerminals() error {
+	ctx := context.Background()
+
 	// Clean up stale terminal records from previous crashes
-	if err := s.db.ClearActiveTerminals(); err != nil {
+	if err := s.db.ClearActiveTerminals(ctx); err != nil {
 		log.Printf("Warning: failed to clear stale terminal records: %v", err)
 	}
 
-	layout, err := s.db.GetActiveLayout()
+	layout, err := s.db.GetActiveLayout(ctx)
 	if err != nil {
 		return err
 	}

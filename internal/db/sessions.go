@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"time"
 )
 
@@ -21,8 +22,8 @@ type SessionTerminal struct {
 	WorkingDir    string
 }
 
-func (db *DB) CreateSession(name, description string) (int, error) {
-	result, err := db.conn.Exec(`
+func (db *DB) CreateSession(ctx context.Context, name, description string) (int, error) {
+	result, err := db.conn.ExecContext(ctx, `
 		INSERT INTO sessions (name, description) VALUES (?, ?)
 	`, name, description)
 	if err != nil {
@@ -32,9 +33,9 @@ func (db *DB) CreateSession(name, description string) (int, error) {
 	return int(id), err
 }
 
-func (db *DB) GetSession(id int) (*Session, error) {
+func (db *DB) GetSession(ctx context.Context, id int) (*Session, error) {
 	s := &Session{}
-	err := db.conn.QueryRow(`
+	err := db.conn.QueryRowContext(ctx, `
 		SELECT id, name, description, created_at, updated_at
 		FROM sessions WHERE id = ?
 	`, id).Scan(&s.ID, &s.Name, &s.Description, &s.CreatedAt, &s.UpdatedAt)
@@ -44,8 +45,8 @@ func (db *DB) GetSession(id int) (*Session, error) {
 	return s, nil
 }
 
-func (db *DB) GetAllSessions() ([]*Session, error) {
-	rows, err := db.conn.Query(`
+func (db *DB) GetAllSessions(ctx context.Context) ([]*Session, error) {
+	rows, err := db.conn.QueryContext(ctx, `
 		SELECT id, name, description, created_at, updated_at
 		FROM sessions ORDER BY updated_at DESC
 	`)
@@ -65,16 +66,16 @@ func (db *DB) GetAllSessions() ([]*Session, error) {
 	return sessions, rows.Err()
 }
 
-func (db *DB) SaveSessionTerminal(sessionID, index int, title, shell, workingDir string) error {
-	_, err := db.conn.Exec(`
+func (db *DB) SaveSessionTerminal(ctx context.Context, sessionID, index int, title, shell, workingDir string) error {
+	_, err := db.conn.ExecContext(ctx, `
 		INSERT INTO session_terminals (session_id, terminal_index, title, shell, working_dir)
 		VALUES (?, ?, ?, ?, ?)
 	`, sessionID, index, title, shell, workingDir)
 	return err
 }
 
-func (db *DB) GetSessionTerminals(sessionID int) ([]*SessionTerminal, error) {
-	rows, err := db.conn.Query(`
+func (db *DB) GetSessionTerminals(ctx context.Context, sessionID int) ([]*SessionTerminal, error) {
+	rows, err := db.conn.QueryContext(ctx, `
 		SELECT id, session_id, terminal_index, title, shell, working_dir
 		FROM session_terminals WHERE session_id = ? ORDER BY terminal_index
 	`, sessionID)
