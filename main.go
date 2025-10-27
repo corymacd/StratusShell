@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	mainPort     = 8080
+	mainPort      = 8080
 	terminal1Port = 8081
 	terminal2Port = 8082
 )
@@ -40,7 +40,7 @@ func main() {
 
 	// Start main HTTP server
 	http.HandleFunc("/", serveMainPage)
-	
+
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", mainPort),
 		Handler: http.DefaultServeMux,
@@ -59,14 +59,14 @@ func main() {
 	// Wait for shutdown signal
 	<-sigChan
 	log.Println("Shutting down gracefully...")
-	
+
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
-	
+
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("Server shutdown error: %v", err)
 	}
-	
+
 	cancel() // Cancel context for GoTTY servers
 }
 
@@ -111,7 +111,7 @@ func startGoTTYServer(ctx context.Context, port int, title string) {
 	}
 
 	// Run server
-	err = srv.Run(ctx, server.WithGracefulContext(ctx))
+	err = srv.Run(ctx, server.WithGracefullContext(ctx))
 	if err != nil {
 		log.Printf("GoTTY server error for %s: %v", title, err)
 	}
