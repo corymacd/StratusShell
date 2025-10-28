@@ -154,7 +154,7 @@ func (p *Provisioner) installGoTool(tool string) error {
 		return fmt.Errorf("unknown go tool: %s", tool)
 	}
 
-	cmd := exec.Command("go", "install", packagePath)
+	cmd := exec.Command("sudo", "-u", p.username, "go", "install", packagePath)
 	if err := cmd.Run(); err != nil {
 		auditLogger.Log(audit.Entry{
 			Action:  audit.ActionToolInstall,
