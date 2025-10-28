@@ -14,6 +14,7 @@ type Config struct {
 	Cloud     CloudConfig     `yaml:"cloud"`
 	Languages LanguagesConfig `yaml:"languages"`
 	Shell     ShellConfig     `yaml:"shell"`
+	Claude    ClaudeConfig    `yaml:"claude"`
 }
 
 // UserConfig contains user-specific settings
@@ -56,6 +57,14 @@ type ShellConfig struct {
 	Zsh     bool `yaml:"zsh"`
 	OhMyZsh bool `yaml:"oh_my_zsh"`
 	Tmux    bool `yaml:"tmux"`
+}
+
+// ClaudeConfig contains Claude Code configuration settings
+type ClaudeConfig struct {
+	Enabled bool     `yaml:"enabled"`
+	Allow   []string `yaml:"allow"`
+	Deny    []string `yaml:"deny"`
+	Ask     []string `yaml:"ask"`
 }
 
 // LoadConfig loads and parses a YAML configuration file

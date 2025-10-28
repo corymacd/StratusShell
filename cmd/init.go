@@ -109,6 +109,12 @@ var initCmd = &cobra.Command{
 			provisionErrors = append(provisionErrors, "shell environment")
 		}
 
+		// Setup Claude Code configuration
+		if err := p.SetupClaudeConfig(); err != nil {
+			log.Printf("Warning: Claude Code setup failed: %v", err)
+			provisionErrors = append(provisionErrors, "Claude Code configuration")
+		}
+
 		if len(provisionErrors) > 0 {
 			log.Printf("✗ Provisioning completed with errors in: %s.", provisionErrors)
 			return fmt.Errorf("one or more provisioning steps failed")
