@@ -23,6 +23,31 @@ var (
 	// Can start with lowercase letter or underscore
 	groupnameRegex = regexp.MustCompile(`^[a-z_][a-z0-9_-]{0,31}$`)
 
+	// Reserved usernames that cannot be used
+	reservedUsernames = map[string]bool{
+		"root": true, "daemon": true, "bin": true, "sys": true, "sync": true, 
+		"games": true, "man": true, "lp": true, "mail": true, "news": true, 
+		"uucp": true, "proxy": true, "www-data": true, "backup": true, "list": true,
+		"irc": true, "gnats": true, "nobody": true, "systemd-network": true, 
+		"systemd-resolve": true, "systemd-timesync": true, "messagebus": true, 
+		"systemd-coredump": true, "syslog": true,
+	}
+
+	// Reserved group names that cannot be used
+	reservedGroupnames = map[string]bool{
+		"root": true, "daemon": true, "bin": true, "sys": true, "adm": true, 
+		"tty": true, "disk": true, "lp": true, "mail": true, "news": true, 
+		"uucp": true, "man": true, "proxy": true, "kmem": true, "dialout": true,
+		"fax": true, "voice": true, "cdrom": true, "floppy": true, "tape": true, 
+		"sudo": true, "audio": true, "dip": true, "www-data": true, "backup": true, 
+		"operator": true, "list": true, "irc": true, "src": true, "gnats": true, 
+		"shadow": true, "utmp": true, "video": true, "sasl": true, "plugdev": true,
+		"staff": true, "games": true, "users": true, "nogroup": true, 
+		"systemd-journal": true, "systemd-network": true, "systemd-resolve": true, 
+		"systemd-timesync": true, "messagebus": true, "systemd-coredump": true, 
+		"syslog": true, "ssh": true,
+	}
+
 	// Port number: 1024-65535 (unprivileged ports)
 	portMin = 1024
 	portMax = 65535
@@ -247,20 +272,11 @@ func ValidateUsername(username string) error {
 		}
 	}
 
-	// Prevent reserved usernames
-	reservedUsernames := []string{
-		"root", "daemon", "bin", "sys", "sync", "games", "man", "lp",
-		"mail", "news", "uucp", "proxy", "www-data", "backup", "list",
-		"irc", "gnats", "nobody", "systemd-network", "systemd-resolve",
-		"systemd-timesync", "messagebus", "systemd-coredump", "syslog",
-	}
-
-	for _, reserved := range reservedUsernames {
-		if username == reserved {
-			return &ValidationError{
-				Field:   "username",
-				Message: fmt.Sprintf("username '%s' is reserved and cannot be used", username),
-			}
+	// Check if username is reserved
+	if reservedUsernames[username] {
+		return &ValidationError{
+			Field:   "username",
+			Message: fmt.Sprintf("username '%s' is reserved and cannot be used", username),
 		}
 	}
 
@@ -283,24 +299,11 @@ func ValidateGroupname(groupname string) error {
 		}
 	}
 
-	// Prevent reserved group names
-	reservedGroupnames := []string{
-		"root", "daemon", "bin", "sys", "adm", "tty", "disk", "lp",
-		"mail", "news", "uucp", "man", "proxy", "kmem", "dialout",
-		"fax", "voice", "cdrom", "floppy", "tape", "sudo", "audio",
-		"dip", "www-data", "backup", "operator", "list", "irc",
-		"src", "gnats", "shadow", "utmp", "video", "sasl", "plugdev",
-		"staff", "games", "users", "nogroup", "systemd-journal",
-		"systemd-network", "systemd-resolve", "systemd-timesync",
-		"messagebus", "systemd-coredump", "syslog", "ssh",
-	}
-
-	for _, reserved := range reservedGroupnames {
-		if groupname == reserved {
-			return &ValidationError{
-				Field:   "groupname",
-				Message: fmt.Sprintf("groupname '%s' is reserved and cannot be used", groupname),
-			}
+	// Check if groupname is reserved
+	if reservedGroupnames[groupname] {
+		return &ValidationError{
+			Field:   "groupname",
+			Message: fmt.Sprintf("groupname '%s' is reserved and cannot be used", groupname),
 		}
 	}
 
