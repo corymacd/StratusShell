@@ -223,8 +223,8 @@ func AddUserToGroup(username, groupname string) error {
 		return fmt.Errorf("invalid username: %w", err)
 	}
 
-	// Validate groupname (use same validation as username for consistency)
-	if err := validation.ValidateUsername(groupname); err != nil {
+	// Validate groupname
+	if err := validation.ValidateGroupname(groupname); err != nil {
 		auditLogger.Log(audit.Entry{
 			Action:  audit.ActionUserGroupAdd,
 			Actor:   "system",

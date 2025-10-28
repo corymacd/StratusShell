@@ -19,6 +19,10 @@ var (
 	// Must start with lowercase letter
 	usernameRegex = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
 
+	// Group name: lowercase letters, digits, dashes, underscores (1-32 chars)
+	// Can start with lowercase letter or underscore
+	groupnameRegex = regexp.MustCompile(`^[a-z_][a-z0-9_-]{0,31}$`)
+
 	// Port number: 1024-65535 (unprivileged ports)
 	portMin = 1024
 	portMax = 65535
@@ -256,6 +260,46 @@ func ValidateUsername(username string) error {
 			return &ValidationError{
 				Field:   "username",
 				Message: fmt.Sprintf("username '%s' is reserved and cannot be used", username),
+			}
+		}
+	}
+
+	return nil
+}
+
+// ValidateGroupname validates group name for system group operations
+func ValidateGroupname(groupname string) error {
+	groupname = strings.TrimSpace(groupname)
+
+	if groupname == "" {
+		return &ValidationError{Field: "groupname", Message: "groupname cannot be empty"}
+	}
+
+	// Check against regex pattern
+	if !groupnameRegex.MatchString(groupname) {
+		return &ValidationError{
+			Field:   "groupname",
+			Message: "groupname must start with lowercase letter or underscore and contain only lowercase letters, numbers, dashes, and underscores (max 32 characters)",
+		}
+	}
+
+	// Prevent reserved group names
+	reservedGroupnames := []string{
+		"root", "daemon", "bin", "sys", "adm", "tty", "disk", "lp",
+		"mail", "news", "uucp", "man", "proxy", "kmem", "dialout",
+		"fax", "voice", "cdrom", "floppy", "tape", "sudo", "audio",
+		"dip", "www-data", "backup", "operator", "list", "irc",
+		"src", "gnats", "shadow", "utmp", "video", "sasl", "plugdev",
+		"staff", "games", "users", "nogroup", "systemd-journal",
+		"systemd-network", "systemd-resolve", "systemd-timesync",
+		"messagebus", "systemd-coredump", "syslog", "ssh",
+	}
+
+	for _, reserved := range reservedGroupnames {
+		if groupname == reserved {
+			return &ValidationError{
+				Field:   "groupname",
+				Message: fmt.Sprintf("groupname '%s' is reserved and cannot be used", groupname),
 			}
 		}
 	}
