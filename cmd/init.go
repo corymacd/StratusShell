@@ -114,7 +114,7 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 	initCmd.Flags().StringP("user", "u", "", "Username to create (required)")
 	initCmd.MarkFlagRequired("user")
-	initCmd.Flags().String("shell", "", "Default shell (overrides config)")
+	initCmd.Flags().String("shell", "", "Shell to use (overrides config if specified)")
 	initCmd.Flags().String("config", "/etc/stratusshell/default.yaml", "Config file path")
 	initCmd.Flags().Bool("skip-tools", false, "Create user only, skip tool installation")
 }
