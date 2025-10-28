@@ -1,0 +1,70 @@
+# GoReleaser configuration for StratusShell
+version: 2
+
+before:
+  hooks:
+    # Ensure dependencies are up to date
+    - go mod tidy
+
+builds:
+  - id: stratusshell
+    binary: stratusshell
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+    flags:
+      - -trimpath
+
+archives:
+  - id: stratusshell-archive
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - typo
+
+dockers:
+  - id: stratusshell-amd64
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - "ghcr.io/corymacd/stratusshell:{{ .Version }}-amd64"
+      - "ghcr.io/corymacd/stratusshell:latest-amd64"
+      - "ghcr.io/corymacd/stratusshell:{{ .Version }}"
+      - "ghcr.io/corymacd/stratusshell:latest"
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/corymacd/StratusShell"
+
+docker_manifests: []
+
+release:
+  github:
+    owner: corymacd
+    name: StratusShell
+  draft: false
+  prerelease: auto

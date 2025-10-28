@@ -1,0 +1,35 @@
+# Dockerfile for GoReleaser
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    bash \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user
+RUN useradd -m -s /bin/bash stratusshell
+
+# Copy the binary from the build context
+COPY stratusshell /usr/local/bin/stratusshell
+
+# Make sure the binary is executable
+RUN chmod +x /usr/local/bin/stratusshell
+
+# Create necessary directories
+RUN mkdir -p /data && chown stratusshell:stratusshell /data
+
+# Switch to non-root user
+USER stratusshell
+
+# Set working directory
+WORKDIR /data
+
+# Expose default ports
+EXPOSE 8080 8081 8082
+
+# Set the entrypoint
+ENTRYPOINT ["/usr/local/bin/stratusshell"]
+CMD ["serve"]
