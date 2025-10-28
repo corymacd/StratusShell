@@ -213,6 +213,22 @@ func (p *Provisioner) InstallMCPServers() error {
 
 // installMCPServer installs a single MCP server using npm
 func (p *Provisioner) installMCPServer(server MCPServerInstall) error {
+	// Validate package name to prevent command injection
+	if err := validation.ValidateNpmPackage(server.Package); err != nil {
+		auditLogger.Log(audit.Entry{
+			Action:  audit.ActionToolInstall,
+			Actor:   "system",
+			Target:  p.username,
+			Outcome: audit.OutcomeFailure,
+			Error:   fmt.Sprintf("invalid package name: %v", err),
+			Details: map[string]interface{}{
+				"mcp_server": server.Name,
+				"package":    server.Package,
+			},
+		})
+		return fmt.Errorf("invalid package name: %w", err)
+	}
+
 	auditLogger.Log(audit.Entry{
 		Action:  audit.ActionToolInstall,
 		Actor:   "system",
@@ -223,21 +239,31 @@ func (p *Provisioner) installMCPServer(server MCPServerInstall) error {
 		},
 	})
 
-	// Execute npm install -g <package>
+	// Execute npm install -g <package> and capture output
 	cmd := exec.Command("npm", "install", "-g", server.Package)
-	err := cmd.Run()
+	output, err := cmd.CombinedOutput()
+
+	// Log the outcome with output details for troubleshooting
+	logDetails := map[string]interface{}{
+		"mcp_server": server.Name,
+		"package":    server.Package,
+	}
+	if len(output) > 0 {
+		logDetails["output"] = string(output)
+	}
 
 	auditLogger.Log(audit.Entry{
 		Action:  audit.ActionToolInstall,
 		Actor:   "system",
 		Target:  p.username,
 		Outcome: audit.OutcomeFromError(err),
-		Details: map[string]interface{}{
-			"mcp_server": server.Name,
-			"package":    server.Package,
-		},
-		Error: audit.ErrorString(err),
+		Details: logDetails,
+		Error:   audit.ErrorString(err),
 	})
 
-	return err
+	if err != nil {
+		return fmt.Errorf("npm install failed: %w (output: %s)", err, string(output))
+	}
+
+	return nil
 }

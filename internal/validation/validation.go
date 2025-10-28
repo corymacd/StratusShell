@@ -51,6 +51,10 @@ var (
 	// Port number: 1024-65535 (unprivileged ports)
 	portMin = 1024
 	portMax = 65535
+
+	// NPM package name: alphanumeric, dashes, slashes, dots, @-prefix for scoped packages
+	// Examples: "package", "@scope/package", "@scope/package-name"
+	npmPackageRegex = regexp.MustCompile(`^(@[a-z0-9-~][a-z0-9-._~]*/)?[a-z0-9-~][a-z0-9-._~]*$`)
 )
 
 // ValidationError represents a validation failure
@@ -304,6 +308,33 @@ func ValidateGroupname(groupname string) error {
 		return &ValidationError{
 			Field:   "groupname",
 			Message: fmt.Sprintf("groupname '%s' is reserved and cannot be used", groupname),
+		}
+	}
+
+	return nil
+}
+
+// ValidateNpmPackage validates npm package name to prevent command injection
+func ValidateNpmPackage(packageName string) error {
+	packageName = strings.TrimSpace(packageName)
+
+	if packageName == "" {
+		return &ValidationError{Field: "package", Message: "package name cannot be empty"}
+	}
+
+	// Check length (npm allows up to 214 characters)
+	if len(packageName) > 214 {
+		return &ValidationError{
+			Field:   "package",
+			Message: "package name cannot exceed 214 characters",
+		}
+	}
+
+	// Check against regex pattern
+	if !npmPackageRegex.MatchString(packageName) {
+		return &ValidationError{
+			Field:   "package",
+			Message: "package name must be a valid npm package (alphanumeric, dashes, dots, slashes for scoped packages)",
 		}
 	}
 

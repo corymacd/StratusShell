@@ -269,71 +269,8 @@ func TestClaudeConfigWithMCPServers(t *testing.T) {
 }
 
 func TestLoadConfigWithMCPServers(t *testing.T) {
-	// Create temporary config file
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "test-config-mcp.yaml")
-
-	configContent := `user:
-  shell: /bin/bash
-
-base_packages:
-  - git
-
-cloud:
-  aws: false
-  gcloud: false
-  kubectl: false
-  docker: false
-  terraform: false
-
-languages:
-  go:
-    enabled: false
-    version: ""
-    tools: []
-  node:
-    enabled: false
-    version: ""
-    package_manager: ""
-    global_packages: []
-
-shell:
-  zsh: false
-  oh_my_zsh: false
-  tmux: false
-
-claude:
-  enabled: true
-  allow:
-    - gh
-  deny: []
-  ask: []
-  mcp_servers:
-    - name: "playwright"
-      package: "@playwright/mcp"
-      command: "npx"
-      args:
-        - "-y"
-        - "@playwright/mcp"
-    - name: "github"
-      package: "github-mcp-server"
-      command: "npx"
-      args:
-        - "-y"
-        - "github-mcp-server"
-    - name: "linear"
-      package: "@mseep/linear-mcp"
-      command: "npx"
-      args:
-        - "-y"
-        - "@mseep/linear-mcp"
-`
-
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-		t.Fatalf("failed to write config file: %v", err)
-	}
-
-	// Load config
+	// Load config from test fixture file
+	configPath := "testdata/config_with_mcp.yaml"
 	config, err := LoadConfig(configPath)
 	if err != nil {
 		t.Fatalf("failed to load config: %v", err)
