@@ -1,12 +1,15 @@
+PREFIX ?= /usr/local
+DESTDIR ?=
+
 .PHONY: generate build install test integration-test clean help
 
 help:
 	@echo "StratusShell Build Commands:"
 	@echo "  make generate        - Generate templ files (requires templ CLI)"
 	@echo "  make build           - Build binary"
-	@echo "  make install         - Install to /usr/local/bin (requires sudo)"
+	@echo "  make install         - Install binary and config (may require sudo)"
 	@echo "  make test            - Run unit tests"
-	@echo "  make integration-test - Run integration tests (requires sudo/docker)"
+	@echo "  make integration-test - Run integration tests (requires sudo)"
 	@echo "  make clean           - Remove build artifacts"
 
 generate:
@@ -21,9 +24,10 @@ build: generate
 	go build -o stratusshell main.go
 
 install: build
-	sudo cp stratusshell /usr/local/bin/
-	sudo mkdir -p /etc/stratusshell
-	sudo cp configs/default.yaml /etc/stratusshell/
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install -m 755 stratusshell $(DESTDIR)$(PREFIX)/bin/
+	install -d $(DESTDIR)/etc/stratusshell
+	install -m 644 configs/default.yaml $(DESTDIR)/etc/stratusshell/
 
 test:
 	go test ./...
@@ -31,7 +35,7 @@ test:
 integration-test:
 	@echo "Integration tests require root privileges"
 	@if [ -d "./test/integration" ]; then \
-		INTEGRATION_TESTS=1 go test ./test/integration/...; \
+		sudo INTEGRATION_TESTS=1 go test ./test/integration/...; \
 	else \
 		echo "No integration tests found (./test/integration directory does not exist)"; \
 	fi
