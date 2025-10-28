@@ -83,24 +83,35 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("provisioner creation failed: %w", err)
 		}
 
+		var provisionErrors []string
+
 		// Install base packages
 		if err := p.InstallBasePackages(); err != nil {
 			log.Printf("Warning: base package installation failed: %v", err)
+			provisionErrors = append(provisionErrors, "base packages")
 		}
 
 		// Install cloud tools
 		if err := p.InstallCloudTools(); err != nil {
 			log.Printf("Warning: cloud tools installation failed: %v", err)
+			provisionErrors = append(provisionErrors, "cloud tools")
 		}
 
 		// Install language toolchains
 		if err := p.InstallLanguageToolchains(); err != nil {
 			log.Printf("Warning: language toolchains installation failed: %v", err)
+			provisionErrors = append(provisionErrors, "language toolchains")
 		}
 
 		// Setup shell environment
 		if err := p.SetupShellEnvironment(); err != nil {
 			log.Printf("Warning: shell setup failed: %v", err)
+			provisionErrors = append(provisionErrors, "shell environment")
+		}
+
+		if len(provisionErrors) > 0 {
+			log.Printf("✗ Provisioning completed with errors in: %s.", provisionErrors)
+			return fmt.Errorf("one or more provisioning steps failed")
 		}
 
 		log.Println("✓ Provisioning complete")
