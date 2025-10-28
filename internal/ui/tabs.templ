@@ -14,7 +14,7 @@ templ TabBar(terminals []TerminalData, activeTabID int) {
 					hx-swap="none"
 					class="flex items-center gap-2">
 					<input type="text" name="title" value={ t.Title } 
-						class="input input-ghost input-xs w-24 focus:w-32 transition-all bg-transparent border-none focus:bg-base-300 text-sm"/>
+						class="input input-ghost input-xs min-w-24 max-w-32 w-full transition-all bg-transparent border-none focus:bg-base-300 text-sm"/>
 				</form>
 				<button class="btn btn-ghost btn-xs btn-circle hover:btn-error ml-1"
 					hx-delete={ fmt.Sprintf("/api/terminal/%d", t.ID) }

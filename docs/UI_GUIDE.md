@@ -104,7 +104,17 @@ The UI uses DaisyUI's theming system. The default theme is "dark", configured in
 <html lang="en" data-theme="dark">
 ```
 
-Available themes: dark, light, cupcake, cyberpunk, and many more. Change the `data-theme` attribute to switch themes.
+Available themes: dark, light, cupcake, cyberpunk, and many more.
+
+**Note:** To change the theme, you must manually edit the `data-theme` attribute in the HTML template. In `internal/ui/layout.templ`, modify:
+
+```html
+<html lang="en" data-theme="dark">
+```
+
+Replace `"dark"` with your desired theme name (e.g., `"light"`, `"cupcake"`, `"cyberpunk"`).
+
+Currently, theme switching requires code changes. A UI theme switcher may be added in the future to allow changing themes from the settings menu.
 
 ### Tailwind Configuration
 
