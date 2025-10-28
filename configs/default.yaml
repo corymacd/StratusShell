@@ -35,3 +35,10 @@ shell:
   zsh: true
   oh_my_zsh: true
   tmux: true
+
+claude:
+  enabled: true
+  allow:
+    - gh
+  deny: []
+  ask: []
