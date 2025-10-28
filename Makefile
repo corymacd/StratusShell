@@ -17,10 +17,7 @@ generate:
 		echo "Install with: go install github.com/a-h/templ/cmd/templ@latest"; \
 	fi
 
-build:
-	@if command -v templ >/dev/null 2>&1; then \
-		templ generate; \
-	fi
+build: generate
 	go build -o stratusshell main.go
 
 install: build
