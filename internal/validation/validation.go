@@ -15,6 +15,10 @@ var (
 	// Session name: alphanumeric, spaces, dashes, underscores (1-100 chars)
 	sessionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9 _-]{1,100}$`)
 
+	// Username: lowercase letters, digits, dashes, underscores (1-32 chars)
+	// Must start with lowercase letter
+	usernameRegex = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
+
 	// Port number: 1024-65535 (unprivileged ports)
 	portMin = 1024
 	portMax = 65535
@@ -221,4 +225,40 @@ func SanitizeString(s string) string {
 
 	// Trim whitespace
 	return strings.TrimSpace(s)
+}
+
+// ValidateUsername validates username for system user creation
+func ValidateUsername(username string) error {
+	username = strings.TrimSpace(username)
+
+	if username == "" {
+		return &ValidationError{Field: "username", Message: "username cannot be empty"}
+	}
+
+	// Check against regex pattern
+	if !usernameRegex.MatchString(username) {
+		return &ValidationError{
+			Field:   "username",
+			Message: "username must start with lowercase letter and contain only lowercase letters, numbers, dashes, and underscores (max 32 characters)",
+		}
+	}
+
+	// Prevent reserved usernames
+	reservedUsernames := []string{
+		"root", "daemon", "bin", "sys", "sync", "games", "man", "lp",
+		"mail", "news", "uucp", "proxy", "www-data", "backup", "list",
+		"irc", "gnats", "nobody", "systemd-network", "systemd-resolve",
+		"systemd-timesync", "messagebus", "systemd-coredump", "syslog",
+	}
+
+	for _, reserved := range reservedUsernames {
+		if username == reserved {
+			return &ValidationError{
+				Field:   "username",
+				Message: fmt.Sprintf("username '%s' is reserved and cannot be used", username),
+			}
+		}
+	}
+
+	return nil
 }

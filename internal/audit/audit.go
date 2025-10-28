@@ -27,6 +27,15 @@ const (
 	// Auth actions
 	ActionAuthLogin  ActionType = "auth.login"
 	ActionAuthLogout ActionType = "auth.logout"
+
+	// Provisioning actions
+	ActionUserCreate       ActionType = "provision.user.create"
+	ActionUserDelete       ActionType = "provision.user.delete"
+	ActionUserShellChange  ActionType = "provision.user.shell_change"
+	ActionSudoersConfig    ActionType = "provision.sudoers.config"
+	ActionSudoersRemove    ActionType = "provision.sudoers.remove"
+	ActionChownRecursive   ActionType = "provision.chown_recursive"
+	ActionToolInstall      ActionType = "provision.tool.install"
 )
 
 // Outcome represents the result of an action
@@ -210,4 +219,20 @@ func (l *Logger) LogAuthLogout(actor string, outcome Outcome) {
 	}
 
 	l.Log(entry)
+}
+
+// OutcomeFromError returns OutcomeSuccess if err is nil, otherwise OutcomeFailure
+func OutcomeFromError(err error) Outcome {
+	if err == nil {
+		return OutcomeSuccess
+	}
+	return OutcomeFailure
+}
+
+// ErrorString returns the error message if err is not nil, otherwise empty string
+func ErrorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
