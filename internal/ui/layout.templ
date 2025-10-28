@@ -2,17 +2,38 @@ package ui
 
 templ Layout(user string) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang="en" data-theme="dark">
 	<head>
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>StratusShell - {user}</title>
+		<!-- HTMX for dynamic interactions -->
 		<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+		<!-- Tailwind CSS -->
+		<script src="https://cdn.tailwindcss.com"></script>
+		<!-- DaisyUI -->
+		<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css"/>
+		<!-- Custom styles -->
 		<link rel="stylesheet" href="/static/styles.css"/>
+		<!-- Tailwind config for dark theme -->
+		<script>
+			tailwind.config = {
+				darkMode: 'class',
+				theme: {
+					extend: {
+						colors: {
+							'terminal-bg': '#1e1e1e',
+							'terminal-border': '#3e3e42',
+							'terminal-text': '#cccccc'
+						}
+					}
+				}
+			}
+		</script>
 	</head>
-	<body>
+	<body class="dark bg-base-300 h-screen flex flex-col overflow-hidden">
 		@Menubar()
-		<div id="tab-container" hx-get="/api/tabs" hx-trigger="load">
+		<div id="tab-container" class="flex-1 flex flex-col overflow-hidden" hx-get="/api/tabs" hx-trigger="load">
 			<!-- Tabs loaded here -->
 		</div>
 		<div id="modal"></div>

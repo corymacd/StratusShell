@@ -42,3 +42,8 @@ claude:
     - gh
   deny: []
   ask: []
+
+sessions:
+  max_terminals: 10
+  auto_reconnect_interval: 10s
+  shell: "bash"

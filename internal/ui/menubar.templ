@@ -1,29 +1,82 @@
 package ui
 
 templ Menubar() {
-	<nav class="menubar">
-		<div class="logo">StratusShell</div>
-
-		<div class="dropdown">
-			<button class="dropdown-btn">Terminal ▾</button>
-			<div class="dropdown-menu">
-				<a hx-post="/api/terminals/add" hx-target="#tab-container" hx-swap="innerHTML">New Terminal</a>
+	<div class="navbar bg-base-200 border-b border-base-300 px-4">
+		<div class="navbar-start">
+			<a class="btn btn-ghost normal-case text-xl text-primary">
+				<span class="font-bold">StratusShell</span>
+			</a>
+		</div>
+		<div class="navbar-center flex gap-2">
+			<!-- Terminal Menu -->
+			<div class="dropdown dropdown-hover">
+				<label tabindex="0" class="btn btn-ghost btn-sm">
+					Terminal
+					<svg class="fill-current w-4 h-4 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+						<path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"></path>
+					</svg>
+				</label>
+				<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-52">
+					<li>
+						<a hx-post="/api/terminals/add" hx-target="#tab-container" hx-swap="innerHTML" class="hover:bg-base-300">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+							</svg>
+							New Terminal
+						</a>
+					</li>
+				</ul>
+			</div>
+			<!-- Sessions Menu -->
+			<div class="dropdown dropdown-hover">
+				<label tabindex="0" class="btn btn-ghost btn-sm">
+					Sessions
+					<svg class="fill-current w-4 h-4 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+						<path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"></path>
+					</svg>
+				</label>
+				<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-52">
+					<li>
+						<a hx-get="/api/session/save-modal" hx-target="#modal" class="hover:bg-base-300">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+							</svg>
+							Save Session...
+						</a>
+					</li>
+					<li>
+						<a hx-get="/api/session/list-modal" hx-target="#modal" class="hover:bg-base-300">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+							</svg>
+							Load Session...
+						</a>
+					</li>
+				</ul>
+			</div>
+			<!-- Config Menu -->
+			<div class="dropdown dropdown-hover">
+				<label tabindex="0" class="btn btn-ghost btn-sm">
+					Settings
+					<svg class="fill-current w-4 h-4 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+						<path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"></path>
+					</svg>
+				</label>
+				<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-200 rounded-box w-52">
+					<li>
+						<a hx-get="/api/config/modal" hx-target="#modal" class="hover:bg-base-300">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+							</svg>
+							Preferences
+						</a>
+					</li>
+				</ul>
 			</div>
 		</div>
-
-		<div class="dropdown">
-			<button class="dropdown-btn">Sessions ▾</button>
-			<div class="dropdown-menu">
-				<a hx-get="/api/session/save-modal" hx-target="#modal">Save Session...</a>
-				<a hx-get="/api/session/list-modal" hx-target="#modal">Load Session...</a>
-			</div>
+		<div class="navbar-end">
+			<div class="badge badge-primary badge-outline">Up to 10 terminals</div>
 		</div>
-
-		<div class="dropdown">
-			<button class="dropdown-btn">Config ▾</button>
-			<div class="dropdown-menu">
-				<a hx-get="/api/config/modal" hx-target="#modal">Preferences...</a>
-			</div>
-		</div>
-	</nav>
+	</div>
 }
