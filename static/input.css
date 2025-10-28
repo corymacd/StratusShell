@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom StratusShell styles */
+
+/* Override iframe pointer-events for terminal interaction */
+.terminal-frame {
+    pointer-events: auto;
+}
+
+/* Ensure tabs don't wrap and scroll horizontally */
+.tabs-boxed {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+/* Smooth tab transitions */
+.tab {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Custom scrollbar for better appearance */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: hsl(var(--b2));
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsl(var(--bc) / 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--bc) / 0.5);
+}
+
+/* Fix for HTMX loading indicator */
+.htmx-request {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Dropdown menu z-index fix */
+.dropdown-content {
+    z-index: 1000 !important;
+}
+
+/* Make sure modals are always on top */
+.modal {
+    z-index: 9999;
+}
+
+/* Terminal background color consistency */
+.bg-terminal-bg {
+    background-color: #1e1e1e;
+}
+
+/* Ensure full height for layout */
+html, body {
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Dropdown click trigger support */
+.dropdown:focus-within .dropdown-content {
+    display: block;
+}

@@ -2,17 +2,19 @@ package ui
 
 templ Layout(user string) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang="en" data-theme="dark">
 	<head>
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>StratusShell - {user}</title>
+		<!-- HTMX for dynamic interactions -->
 		<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-		<link rel="stylesheet" href="/static/styles.css"/>
+		<!-- Bundled Tailwind CSS + DaisyUI (self-hosted, no CDN dependency) -->
+		<link rel="stylesheet" href="/static/bundle.css"/>
 	</head>
-	<body>
+	<body class="dark bg-base-300 h-screen flex flex-col overflow-hidden">
 		@Menubar()
-		<div id="tab-container" hx-get="/api/tabs" hx-trigger="load">
+		<div id="tab-container" class="flex-1 flex flex-col overflow-hidden" hx-get="/api/tabs" hx-trigger="load">
 			<!-- Tabs loaded here -->
 		</div>
 		<div id="modal"></div>

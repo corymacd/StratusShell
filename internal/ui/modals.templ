@@ -3,21 +3,34 @@ package ui
 import "fmt"
 
 templ SaveSessionModal() {
-	<div class="modal-overlay" hx-on:click="document.getElementById('modal').innerHTML = ''">
-		<div class="modal-content" hx-on:click="event.stopPropagation()">
-			<h2>Save Session</h2>
-			<form hx-post="/api/session/save" hx-target="#modal">
-				<label>
-					Session Name:
-					<input type="text" name="name" required autofocus/>
-				</label>
-				<label>
-					Description (optional):
-					<textarea name="description"></textarea>
-				</label>
-				<div class="modal-actions">
-					<button type="submit">Save</button>
-					<button type="button" hx-on:click="document.getElementById('modal').innerHTML = ''">Cancel</button>
+	<div class="modal modal-open" hx-on:click="document.getElementById('modal').innerHTML = ''">
+		<div class="modal-box bg-base-200" hx-on:click="event.stopPropagation()">
+			<h3 class="font-bold text-lg mb-4">Save Session</h3>
+			<form hx-post="/api/session/save" hx-target="#modal" class="space-y-4">
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text">Session Name</span>
+					</label>
+					<input type="text" name="name" placeholder="e.g., Python Development" required autofocus 
+						class="input input-bordered w-full bg-base-100"/>
+				</div>
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text">Description (optional)</span>
+					</label>
+					<textarea name="description" placeholder="Additional details about this session..." rows="3"
+						class="textarea textarea-bordered bg-base-100"></textarea>
+				</div>
+				<div class="modal-action">
+					<button type="button" class="btn btn-ghost" hx-on:click="document.getElementById('modal').innerHTML = ''">
+						Cancel
+					</button>
+					<button type="submit" class="btn btn-primary">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+						</svg>
+						Save
+					</button>
 				</div>
 			</form>
 		</div>
@@ -25,29 +38,47 @@ templ SaveSessionModal() {
 }
 
 templ LoadSessionModal(sessions []SessionData) {
-	<div class="modal-overlay" hx-on:click="document.getElementById('modal').innerHTML = ''">
-		<div class="modal-content" hx-on:click="event.stopPropagation()">
-			<h2>Load Session</h2>
-			<div class="session-list">
+	<div class="modal modal-open" hx-on:click="document.getElementById('modal').innerHTML = ''">
+		<div class="modal-box bg-base-200 max-w-2xl" hx-on:click="event.stopPropagation()">
+			<h3 class="font-bold text-lg mb-4">Load Session</h3>
+			<div class="space-y-3 max-h-96 overflow-y-auto">
 				if len(sessions) == 0 {
-					<p>No saved sessions</p>
+					<div class="alert alert-info">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						</svg>
+						<span>No saved sessions yet. Save your current setup to get started!</span>
+					</div>
 				} else {
 					for _, s := range sessions {
-						<div class="session-item">
-							<div class="session-info">
-								<strong>{ s.Name }</strong>
-								if s.Description != "" {
-									<p>{ s.Description }</p>
-								}
+						<div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+							<div class="card-body p-4">
+								<div class="flex justify-between items-start">
+									<div class="flex-1">
+										<h4 class="card-title text-base">{ s.Name }</h4>
+										if s.Description != "" {
+											<p class="text-sm text-base-content opacity-70 mt-1">{ s.Description }</p>
+										}
+									</div>
+									<button class="btn btn-primary btn-sm" 
+										hx-post={ fmt.Sprintf("/api/session/load/%d", s.ID) }
+										hx-target="#tab-container"
+										hx-headers='{"X-CSRF-Token": document.cookie.match(/csrf_token=([^;]+)/)?.[1] || ""}'>
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+										</svg>
+										Load
+									</button>
+								</div>
 							</div>
-							<button hx-post={ fmt.Sprintf("/api/session/load/%d", s.ID) }
-								hx-target="#terminal-container">Load</button>
 						</div>
 					}
 				}
 			</div>
-			<div class="modal-actions">
-				<button type="button" hx-on:click="document.getElementById('modal').innerHTML = ''">Cancel</button>
+			<div class="modal-action">
+				<button type="button" class="btn btn-ghost" hx-on:click="document.getElementById('modal').innerHTML = ''">
+					Close
+				</button>
 			</div>
 		</div>
 	</div>
@@ -60,15 +91,27 @@ type SessionData struct {
 }
 
 templ SuccessMessage(message string) {
-	<div class="modal-overlay" hx-on:click="document.getElementById('modal').innerHTML = ''">
-		<div class="modal-content modal-success" hx-on:click="event.stopPropagation()">
-			<h2>✓ Success</h2>
-			<p>{ message }</p>
-			<button hx-on:click="document.getElementById('modal').innerHTML = ''">Close</button>
+	<div class="modal modal-open" hx-on:click="document.getElementById('modal').innerHTML = ''">
+		<div class="modal-box bg-base-200 text-center" hx-on:click="event.stopPropagation()">
+			<div class="text-6xl text-success mb-4">✓</div>
+			<h3 class="font-bold text-xl mb-2">Success</h3>
+			<p class="text-base-content opacity-80">{ message }</p>
+			<div class="modal-action justify-center">
+				<button class="btn btn-primary" hx-on:click="document.getElementById('modal').innerHTML = ''">
+					Close
+				</button>
+			</div>
 		</div>
 	</div>
 }
 
 templ ErrorToast(message string) {
-	<div class="error-toast">{ message }</div>
+	<div class="toast toast-end">
+		<div class="alert alert-error">
+			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+			</svg>
+			<span>{ message }</span>
+		</div>
+	</div>
 }

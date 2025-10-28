@@ -1,0 +1,13 @@
+{
+  "name": "stratusshell",
+  "version": "1.0.0",
+  "description": "Cloud development environment provisioning tool",
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/input.css -o ./static/bundle.css --minify",
+    "watch:css": "tailwindcss -i ./static/input.css -o ./static/bundle.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1",
+    "daisyui": "^4.12.14"
+  }
+}

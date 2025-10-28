@@ -42,3 +42,10 @@ stratusshell
 
 # GoReleaser output
 dist/
+
+# Node.js dependencies
+node_modules/
+package-lock.json
+
+# Keep bundled CSS for distribution
+!static/bundle.css

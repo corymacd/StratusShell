@@ -3,44 +3,56 @@ package ui
 import "fmt"
 
 templ TabBar(terminals []TerminalData, activeTabID int) {
-	<div class="tab-bar">
-		<div class="tabs">
-			for _, t := range terminals {
-				<div class={ "tab", templ.KV("tab-active", t.ID == activeTabID) }
-					hx-post={ fmt.Sprintf("/api/tabs/switch/%d", t.ID) }
-					hx-target="#active-terminal"
-					hx-swap="innerHTML">
-					<form hx-post={ fmt.Sprintf("/api/terminal/%d/rename", t.ID) }
-						hx-trigger="blur from:[name='title']"
-						hx-swap="none"
-						class="tab-title-form">
-						<input type="text" name="title" value={ t.Title } class="tab-title"/>
-					</form>
-					<button class="tab-close"
-						hx-delete={ fmt.Sprintf("/api/terminal/%d", t.ID) }
-						hx-target="#tab-container"
-						hx-swap="innerHTML"
-						onclick="event.stopPropagation()">×</button>
-				</div>
-			}
-			if len(terminals) < 10 {
-				<button class="tab-new"
-					hx-post="/api/terminals/add"
+	<div class="tabs tabs-boxed bg-base-200 border-b border-base-300 flex items-end gap-1 px-2 py-2 overflow-x-auto">
+		for _, t := range terminals {
+			<div class={ "tab tab-lifted transition-all", templ.KV("tab-active bg-base-100 border-primary", t.ID == activeTabID) }
+				hx-post={ fmt.Sprintf("/api/tabs/switch/%d", t.ID) }
+				hx-target="#active-terminal"
+				hx-swap="innerHTML">
+				<form hx-post={ fmt.Sprintf("/api/terminal/%d/rename", t.ID) }
+					hx-trigger="blur from:[name='title']"
+					hx-swap="none"
+					class="flex items-center gap-2">
+					<input type="text" name="title" value={ t.Title } maxlength="50"
+						class="input input-ghost input-xs min-w-24 max-w-32 w-full transition-all bg-transparent border-none focus:bg-base-300 text-sm"/>
+				</form>
+				<button class="btn btn-ghost btn-xs btn-circle hover:btn-error ml-1"
+					hx-delete={ fmt.Sprintf("/api/terminal/%d", t.ID) }
 					hx-target="#tab-container"
 					hx-swap="innerHTML"
-					title="New Terminal (max 10)">+</button>
-			}
-		</div>
+					onclick="event.stopPropagation()">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+					</svg>
+				</button>
+			</div>
+		}
+		if len(terminals) < 10 {
+			<button class="btn btn-sm btn-ghost btn-circle tooltip tooltip-bottom" data-tip="New Terminal (max 10)"
+				hx-post="/api/terminals/add"
+				hx-target="#tab-container"
+				hx-swap="innerHTML">
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+				</svg>
+			</button>
+		} else {
+			<button class="btn btn-sm btn-ghost btn-circle tooltip tooltip-bottom" data-tip="Maximum terminals reached" disabled>
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+				</svg>
+			</button>
+		}
 	</div>
 }
 
 templ ActiveTerminal(id int) {
-	<iframe src={ fmt.Sprintf("/term/%d/", id) } class="terminal-frame" id={ fmt.Sprintf("terminal-%d", id) }></iframe>
+	<iframe src={ fmt.Sprintf("/term/%d/", id) } class="w-full h-full border-none bg-terminal-bg" id={ fmt.Sprintf("terminal-%d", id) }></iframe>
 }
 
 templ TabContainer(terminals []TerminalData, activeTabID int) {
 	@TabBar(terminals, activeTabID)
-	<div id="active-terminal" class="active-terminal">
+	<div id="active-terminal" class="flex-1 flex overflow-hidden bg-base-100">
 		if len(terminals) > 0 {
 			if activeTabID > 0 {
 				@ActiveTerminal(activeTabID)
@@ -48,9 +60,17 @@ templ TabContainer(terminals []TerminalData, activeTabID int) {
 				@ActiveTerminal(terminals[0].ID)
 			}
 		} else {
-			<div class="empty-state">
-				<p>No terminals open</p>
-				<button hx-post="/api/terminals/add" hx-target="#tab-container" hx-swap="innerHTML">Create Terminal</button>
+			<div class="flex-1 flex flex-col items-center justify-center gap-6 bg-base-200">
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-base-content opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+				</svg>
+				<p class="text-xl text-base-content opacity-60">No terminals open</p>
+				<button class="btn btn-primary" hx-post="/api/terminals/add" hx-target="#tab-container" hx-swap="innerHTML">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+					</svg>
+					Create Terminal
+				</button>
 			</div>
 		}
 	</div>

@@ -29,7 +29,7 @@ func Layout(user string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>StratusShell - ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"dark\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>StratusShell - ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -42,7 +42,7 @@ func Layout(user string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><script src=\"https://unpkg.com/htmx.org@1.9.10\"></script><link rel=\"stylesheet\" href=\"/static/styles.css\"></head><body>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><!-- HTMX for dynamic interactions --><script src=\"https://unpkg.com/htmx.org@1.9.10\"></script><!-- Bundled Tailwind CSS + DaisyUI (self-hosted, no CDN dependency) --><link rel=\"stylesheet\" href=\"/static/bundle.css\"></head><body class=\"dark bg-base-300 h-screen flex flex-col overflow-hidden\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -50,7 +50,7 @@ func Layout(user string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div id=\"tab-container\" hx-get=\"/api/tabs\" hx-trigger=\"load\"><!-- Tabs loaded here --></div><div id=\"modal\"></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div id=\"tab-container\" class=\"flex-1 flex flex-col overflow-hidden\" hx-get=\"/api/tabs\" hx-trigger=\"load\"><!-- Tabs loaded here --></div><div id=\"modal\"></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
