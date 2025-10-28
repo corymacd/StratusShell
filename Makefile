@@ -6,7 +6,7 @@ help:
 	@echo "  make build           - Build binary"
 	@echo "  make install         - Install to /usr/local/bin (requires sudo)"
 	@echo "  make test            - Run unit tests"
-	@echo "  make integration-test- Run integration tests (requires sudo/docker)"
+	@echo "  make integration-test - Run integration tests (requires sudo/docker)"
 	@echo "  make clean           - Remove build artifacts"
 
 generate:
@@ -34,7 +34,11 @@ test:
 
 integration-test:
 	@echo "Integration tests require root privileges"
-	INTEGRATION_TESTS=1 go test ./test/integration/...
+	@if [ -d "./test/integration" ]; then \
+		INTEGRATION_TESTS=1 go test ./test/integration/...; \
+	else \
+		echo "No integration tests found (./test/integration directory does not exist)"; \
+	fi
 
 clean:
 	rm -f stratusshell
