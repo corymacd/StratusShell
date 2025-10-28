@@ -9,27 +9,8 @@ templ Layout(user string) {
 		<title>StratusShell - {user}</title>
 		<!-- HTMX for dynamic interactions -->
 		<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-		<!-- Tailwind CSS -->
-		<script src="https://cdn.tailwindcss.com"></script>
-		<!-- DaisyUI -->
-		<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css"/>
-		<!-- Custom styles -->
-		<link rel="stylesheet" href="/static/styles.css"/>
-		<!-- Tailwind config for dark theme -->
-		<script>
-			tailwind.config = {
-				darkMode: 'class',
-				theme: {
-					extend: {
-						colors: {
-							'terminal-bg': '#1e1e1e',
-							'terminal-border': '#3e3e42',
-							'terminal-text': '#cccccc'
-						}
-					}
-				}
-			}
-		</script>
+		<!-- Bundled Tailwind CSS + DaisyUI (self-hosted, no CDN dependency) -->
+		<link rel="stylesheet" href="/static/bundle.css"/>
 	</head>
 	<body class="dark bg-base-300 h-screen flex flex-col overflow-hidden">
 		@Menubar()

@@ -42,7 +42,7 @@ func Layout(user string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><!-- HTMX for dynamic interactions --><script src=\"https://unpkg.com/htmx.org@1.9.10\"></script><!-- Tailwind CSS --><script src=\"https://cdn.tailwindcss.com\"></script><!-- DaisyUI --><link href=\"https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css\" rel=\"stylesheet\" type=\"text/css\"><!-- Custom styles --><link rel=\"stylesheet\" href=\"/static/styles.css\"><!-- Tailwind config for dark theme --><script>\n\t\t\ttailwind.config = {\n\t\t\t\tdarkMode: 'class',\n\t\t\t\ttheme: {\n\t\t\t\t\textend: {\n\t\t\t\t\t\tcolors: {\n\t\t\t\t\t\t\t'terminal-bg': '#1e1e1e',\n\t\t\t\t\t\t\t'terminal-border': '#3e3e42',\n\t\t\t\t\t\t\t'terminal-text': '#cccccc'\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t</script></head><body class=\"dark bg-base-300 h-screen flex flex-col overflow-hidden\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><!-- HTMX for dynamic interactions --><script src=\"https://unpkg.com/htmx.org@1.9.10\"></script><!-- Bundled Tailwind CSS + DaisyUI (self-hosted, no CDN dependency) --><link rel=\"stylesheet\" href=\"/static/bundle.css\"></head><body class=\"dark bg-base-300 h-screen flex flex-col overflow-hidden\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

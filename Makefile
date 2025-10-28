@@ -1,10 +1,11 @@
 PREFIX ?= /usr/local
 DESTDIR ?=
 
-.PHONY: generate build install test integration-test clean help
+.PHONY: generate build install test integration-test clean help css
 
 help:
 	@echo "StratusShell Build Commands:"
+	@echo "  make css             - Build bundled CSS (requires npm)"
 	@echo "  make generate        - Generate templ files (requires templ CLI)"
 	@echo "  make build           - Build binary"
 	@echo "  make install         - Install binary and config (may require sudo)"
@@ -12,7 +13,16 @@ help:
 	@echo "  make integration-test - Run integration tests (requires sudo)"
 	@echo "  make clean           - Remove build artifacts"
 
-generate:
+css:
+	@if command -v npm >/dev/null 2>&1; then \
+		npm install; \
+		npm run build:css; \
+	else \
+		echo "Warning: npm not found. Skipping CSS build."; \
+		echo "Install Node.js to build CSS: https://nodejs.org/"; \
+	fi
+
+generate: css
 	@if command -v templ >/dev/null 2>&1; then \
 		templ generate; \
 	else \
@@ -43,3 +53,5 @@ integration-test:
 clean:
 	rm -f stratusshell
 	find . -name "*_templ.go" -delete
+	rm -rf node_modules
+	rm -f static/bundle.css
