@@ -42,6 +42,28 @@ claude:
     - gh
   deny: []
   ask: []
+  mcp_servers:
+    - name: "playwright"
+      package: "@playwright/mcp"
+      command: "npx"
+      args:
+        - "-y"
+        - "@playwright/mcp"
+      env: {}
+    - name: "github"
+      package: "github-mcp-server"
+      command: "npx"
+      args:
+        - "-y"
+        - "github-mcp-server"
+      env: {}
+    - name: "linear"
+      package: "@mseep/linear-mcp"
+      command: "npx"
+      args:
+        - "-y"
+        - "@mseep/linear-mcp"
+      env: {}
 
 sessions:
   max_terminals: 10

@@ -61,10 +61,20 @@ type ShellConfig struct {
 
 // ClaudeConfig contains Claude Code configuration settings
 type ClaudeConfig struct {
-	Enabled bool     `yaml:"enabled"`
-	Allow   []string `yaml:"allow"`
-	Deny    []string `yaml:"deny"`
-	Ask     []string `yaml:"ask"`
+	Enabled    bool                 `yaml:"enabled"`
+	Allow      []string             `yaml:"allow"`
+	Deny       []string             `yaml:"deny"`
+	Ask        []string             `yaml:"ask"`
+	MCPServers []MCPServerInstall   `yaml:"mcp_servers"`
+}
+
+// MCPServerInstall contains configuration for installing an MCP server
+type MCPServerInstall struct {
+	Name    string            `yaml:"name"`
+	Package string            `yaml:"package"`
+	Command string            `yaml:"command"`
+	Args    []string          `yaml:"args"`
+	Env     map[string]string `yaml:"env"`
 }
 
 // LoadConfig loads and parses a YAML configuration file

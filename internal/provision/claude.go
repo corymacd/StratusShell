@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/corymacd/StratusShell/internal/audit"
@@ -13,7 +14,8 @@ import (
 
 // ClaudeSettings represents the structure of Claude Code settings.json
 type ClaudeSettings struct {
-	Permissions ClaudePermissions `json:"permissions"`
+	Permissions ClaudePermissions           `json:"permissions"`
+	MCPServers  map[string]MCPServerConfig  `json:"mcpServers,omitempty"`
 }
 
 // ClaudePermissions represents the permissions structure in Claude settings
@@ -21,6 +23,13 @@ type ClaudePermissions struct {
 	Allow []string `json:"allow"`
 	Deny  []string `json:"deny"`
 	Ask   []string `json:"ask"`
+}
+
+// MCPServerConfig represents the configuration for an MCP server
+type MCPServerConfig struct {
+	Command string            `json:"command"`
+	Args    []string          `json:"args,omitempty"`
+	Env     map[string]string `json:"env,omitempty"`
 }
 
 // SetupClaudeConfig configures Claude Code settings for the user
@@ -82,6 +91,18 @@ func (p *Provisioner) SetupClaudeConfig() error {
 		},
 	}
 
+	// Add MCP server configurations if any are defined
+	if len(p.config.Claude.MCPServers) > 0 {
+		settings.MCPServers = make(map[string]MCPServerConfig)
+		for _, mcpServer := range p.config.Claude.MCPServers {
+			settings.MCPServers[mcpServer.Name] = MCPServerConfig{
+				Command: mcpServer.Command,
+				Args:    mcpServer.Args,
+				Env:     mcpServer.Env,
+			}
+		}
+	}
+
 	// Marshal to JSON with indentation
 	data, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
@@ -139,4 +160,84 @@ func (p *Provisioner) SetupClaudeConfig() error {
 
 	log.Printf("Claude Code configuration created at: %s", settingsPath)
 	return nil
+}
+
+// InstallMCPServers installs configured MCP servers as npm global packages
+func (p *Provisioner) InstallMCPServers() error {
+	if !p.config.Claude.Enabled {
+		log.Println("Claude Code is disabled, skipping MCP server installation...")
+		return nil
+	}
+
+	if len(p.config.Claude.MCPServers) == 0 {
+		log.Println("No MCP servers configured, skipping installation...")
+		return nil
+	}
+
+	log.Println("Installing MCP servers...")
+
+	installed := 0
+	failed := 0
+
+	for _, mcpServer := range p.config.Claude.MCPServers {
+		if mcpServer.Package == "" {
+			log.Printf("Skipping %s: no package specified", mcpServer.Name)
+			continue
+		}
+
+		log.Printf("Installing MCP server: %s (%s)", mcpServer.Name, mcpServer.Package)
+		if err := p.installMCPServer(mcpServer); err != nil {
+			log.Printf("Warning: failed to install %s: %v", mcpServer.Name, err)
+			failed++
+		} else {
+			installed++
+		}
+	}
+
+	auditLogger.Log(audit.Entry{
+		Action:  audit.ActionToolInstall,
+		Actor:   "system",
+		Target:  p.username,
+		Outcome: audit.OutcomeSuccess,
+		Details: map[string]interface{}{
+			"stage":     "mcp_servers",
+			"installed": installed,
+			"failed":    failed,
+			"total":     len(p.config.Claude.MCPServers),
+		},
+	})
+
+	log.Printf("Installed %d/%d MCP servers", installed, len(p.config.Claude.MCPServers))
+	return nil
+}
+
+// installMCPServer installs a single MCP server using npm
+func (p *Provisioner) installMCPServer(server MCPServerInstall) error {
+	auditLogger.Log(audit.Entry{
+		Action:  audit.ActionToolInstall,
+		Actor:   "system",
+		Target:  p.username,
+		Details: map[string]interface{}{
+			"mcp_server": server.Name,
+			"package":    server.Package,
+		},
+	})
+
+	// Execute npm install -g <package>
+	cmd := exec.Command("npm", "install", "-g", server.Package)
+	err := cmd.Run()
+
+	auditLogger.Log(audit.Entry{
+		Action:  audit.ActionToolInstall,
+		Actor:   "system",
+		Target:  p.username,
+		Outcome: audit.OutcomeFromError(err),
+		Details: map[string]interface{}{
+			"mcp_server": server.Name,
+			"package":    server.Package,
+		},
+		Error: audit.ErrorString(err),
+	})
+
+	return err
 }
