@@ -279,15 +279,10 @@ func (s *Server) handleLoadSession(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Update layout: restore session's original layout type if available
-	sessionLayoutType, err := s.db.GetSessionLayoutType(sessionID)
-	layoutType := sessionLayoutType
-	if err != nil || layoutType == "" {
-		// Fallback to previous logic if not found
-		layoutType = "horizontal"
-		if len(sessionTerminals) > 2 {
-			layoutType = "grid"
-		}
+	// Update layout: determine layout based on terminal count
+	layoutType := "horizontal"
+	if len(sessionTerminals) > 2 {
+		layoutType = "grid"
 	}
 	s.db.UpdateActiveLayout(r.Context(), layoutType, len(sessionTerminals))
 
