@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "fmt"
 
-func TerminalPane(id int, port int, title string) templ.Component {
+func TerminalPane(id int, title string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -101,9 +101,9 @@ func TerminalPane(id int, port int, title string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/term/%d/", port))
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/term/%d/", id))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/terminal.templ`, Line: 19, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/terminal.templ`, Line: 19, Col: 44}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -161,7 +161,7 @@ func TerminalContainer(terminals []TerminalData, layoutType string) templ.Compon
 			return templ_7745c5c3_Err
 		}
 		for _, t := range terminals {
-			templ_7745c5c3_Err = TerminalPane(t.ID, t.Port, t.Title).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = TerminalPane(t.ID, t.Title).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -176,7 +176,6 @@ func TerminalContainer(terminals []TerminalData, layoutType string) templ.Compon
 
 type TerminalData struct {
 	ID    int
-	Port  int
 	Title string
 }
 

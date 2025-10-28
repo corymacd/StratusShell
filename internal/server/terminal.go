@@ -26,19 +26,21 @@ type Terminal struct {
 }
 
 type TerminalManager struct {
-	terminals map[int]*Terminal
-	portPool  *PortPool
-	db        *db.DB
-	mu        sync.RWMutex
-	nextID    int
+	terminals    map[int]*Terminal
+	portPool     *PortPool
+	db           *db.DB
+	mu           sync.RWMutex
+	nextID       int
+	maxTerminals int
 }
 
 func NewTerminalManager(db *db.DB) *TerminalManager {
 	return &TerminalManager{
-		terminals: make(map[int]*Terminal),
-		portPool:  NewPortPool(8081, 8181),
-		db:        db,
-		nextID:    1,
+		terminals:    make(map[int]*Terminal),
+		portPool:     NewPortPool(0, 0), // Use ephemeral ports
+		db:           db,
+		nextID:       1,
+		maxTerminals: 10, // Maximum 10 concurrent terminals
 	}
 }
 
@@ -55,6 +57,14 @@ func generateCredential() (string, error) {
 }
 
 func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Terminal, error) {
+	tm.mu.Lock()
+	// Check if we've reached the maximum number of terminals
+	if len(tm.terminals) >= tm.maxTerminals {
+		tm.mu.Unlock()
+		return nil, fmt.Errorf("maximum number of terminals (%d) reached", tm.maxTerminals)
+	}
+	tm.mu.Unlock()
+
 	port, err := tm.portPool.Allocate()
 	if err != nil {
 		return nil, fmt.Errorf("failed to allocate port: %w", err)

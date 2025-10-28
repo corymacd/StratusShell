@@ -33,7 +33,6 @@ func (s *Server) handleGetLayout(w http.ResponseWriter, r *http.Request) {
 	for i, t := range terminals {
 		termData[i] = ui.TerminalData{
 			ID:    t.ID,
-			Port:  t.Port,
 			Title: t.Title,
 		}
 	}
