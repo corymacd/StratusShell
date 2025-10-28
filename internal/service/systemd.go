@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"text/template"
 )
 
@@ -60,17 +61,6 @@ func getUserHomeDir(username string) (string, error) {
 	}
 	return u.HomeDir, nil
 }
-
-import (
-	"bytes"
-	"fmt"
-	"os"
-	"os/exec"
-	"os/user"
-	"path/filepath"
-	"regexp"
-	"text/template"
-)
 
 var validUsernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
