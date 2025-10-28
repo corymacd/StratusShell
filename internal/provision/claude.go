@@ -82,15 +82,6 @@ func (p *Provisioner) SetupClaudeConfig() error {
 		},
 	}
 
-	// If no permissions are specified, use safe defaults
-	if len(settings.Permissions.Allow) == 0 &&
-		len(settings.Permissions.Deny) == 0 &&
-		len(settings.Permissions.Ask) == 0 {
-		settings.Permissions.Allow = []string{}
-		settings.Permissions.Deny = []string{}
-		settings.Permissions.Ask = []string{}
-	}
-
 	// Marshal to JSON with indentation
 	data, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {
