@@ -115,6 +115,12 @@ var initCmd = &cobra.Command{
 			provisionErrors = append(provisionErrors, "Claude Code configuration")
 		}
 
+		// Install MCP servers
+		if err := p.InstallMCPServers(); err != nil {
+			log.Printf("Warning: MCP server installation failed: %v", err)
+			provisionErrors = append(provisionErrors, "MCP servers")
+		}
+
 		if len(provisionErrors) > 0 {
 			log.Printf("✗ Provisioning completed with errors in: %s.", provisionErrors)
 			return fmt.Errorf("one or more provisioning steps failed")

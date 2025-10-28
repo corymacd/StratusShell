@@ -196,3 +196,108 @@ claude:
 		t.Errorf("expected 1 ask entry, got %d", len(config.Claude.Ask))
 	}
 }
+
+func TestClaudeConfigWithMCPServers(t *testing.T) {
+	settings := ClaudeSettings{
+		Permissions: ClaudePermissions{
+			Allow: []string{"gh"},
+			Deny:  []string{},
+			Ask:   []string{},
+		},
+		MCPServers: map[string]MCPServerConfig{
+			"playwright": {
+				Command: "npx",
+				Args:    []string{"-y", "@playwright/mcp"},
+			},
+			"github": {
+				Command: "npx",
+				Args:    []string{"-y", "github-mcp-server"},
+			},
+			"linear": {
+				Command: "npx",
+				Args:    []string{"-y", "@mseep/linear-mcp"},
+			},
+		},
+	}
+
+	data, err := json.MarshalIndent(settings, "", "  ")
+	if err != nil {
+		t.Fatalf("failed to marshal settings with MCP servers: %v", err)
+	}
+
+	var unmarshaled ClaudeSettings
+	if err := json.Unmarshal(data, &unmarshaled); err != nil {
+		t.Fatalf("failed to unmarshal settings: %v", err)
+	}
+
+	if len(unmarshaled.MCPServers) != 3 {
+		t.Errorf("expected 3 MCP servers, got %d", len(unmarshaled.MCPServers))
+	}
+
+	// Verify playwright config
+	playwright, ok := unmarshaled.MCPServers["playwright"]
+	if !ok {
+		t.Error("playwright MCP server not found")
+	} else {
+		if playwright.Command != "npx" {
+			t.Errorf("expected playwright command to be 'npx', got '%s'", playwright.Command)
+		}
+		if len(playwright.Args) != 2 {
+			t.Errorf("expected 2 args for playwright, got %d", len(playwright.Args))
+		}
+	}
+
+	// Verify github config
+	github, ok := unmarshaled.MCPServers["github"]
+	if !ok {
+		t.Error("github MCP server not found")
+	} else {
+		if github.Command != "npx" {
+			t.Errorf("expected github command to be 'npx', got '%s'", github.Command)
+		}
+	}
+
+	// Verify linear config
+	linear, ok := unmarshaled.MCPServers["linear"]
+	if !ok {
+		t.Error("linear MCP server not found")
+	} else {
+		if linear.Command != "npx" {
+			t.Errorf("expected linear command to be 'npx', got '%s'", linear.Command)
+		}
+	}
+}
+
+func TestLoadConfigWithMCPServers(t *testing.T) {
+	// Load config from test fixture file
+	configPath := "testdata/config_with_mcp.yaml"
+	config, err := LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	// Verify MCP servers were loaded
+	if len(config.Claude.MCPServers) != 3 {
+		t.Errorf("expected 3 MCP servers, got %d", len(config.Claude.MCPServers))
+	}
+
+	// Verify playwright config
+	var playwrightFound bool
+	for _, mcp := range config.Claude.MCPServers {
+		if mcp.Name == "playwright" {
+			playwrightFound = true
+			if mcp.Package != "@playwright/mcp" {
+				t.Errorf("expected playwright package to be '@playwright/mcp', got '%s'", mcp.Package)
+			}
+			if mcp.Command != "npx" {
+				t.Errorf("expected playwright command to be 'npx', got '%s'", mcp.Command)
+			}
+			if len(mcp.Args) != 2 {
+				t.Errorf("expected 2 args for playwright, got %d", len(mcp.Args))
+			}
+		}
+	}
+	if !playwrightFound {
+		t.Error("playwright MCP server not found in config")
+	}
+}

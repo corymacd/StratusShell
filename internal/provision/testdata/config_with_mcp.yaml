@@ -1,40 +1,31 @@
 user:
-  shell: /bin/zsh
+  shell: /bin/bash
 
 base_packages:
   - git
-  - curl
-  - build-essential
 
 cloud:
-  aws: true
-  gcloud: true
-  kubectl: true
-  docker: true
-  terraform: true
+  aws: false
+  gcloud: false
+  kubectl: false
+  docker: false
+  terraform: false
 
 languages:
   go:
-    enabled: true
-    version: latest
-    tools:
-      - golangci-lint
-      - gopls
-      - delve
-
+    enabled: false
+    version: ""
+    tools: []
   node:
-    enabled: true
-    version: lts
-    package_manager: pnpm
-    global_packages:
-      - typescript
-      - prettier
-      - eslint
+    enabled: false
+    version: ""
+    package_manager: ""
+    global_packages: []
 
 shell:
-  zsh: true
-  oh_my_zsh: true
-  tmux: true
+  zsh: false
+  oh_my_zsh: false
+  tmux: false
 
 claude:
   enabled: true
@@ -49,23 +40,15 @@ claude:
       args:
         - "-y"
         - "@playwright/mcp"
-      env: {}
     - name: "github"
       package: "github-mcp-server"
       command: "npx"
       args:
         - "-y"
         - "github-mcp-server"
-      env: {}
     - name: "linear"
       package: "@mseep/linear-mcp"
       command: "npx"
       args:
         - "-y"
         - "@mseep/linear-mcp"
-      env: {}
-
-sessions:
-  max_terminals: 10
-  auto_reconnect_interval: 10s
-  shell: "bash"

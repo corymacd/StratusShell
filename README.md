@@ -10,6 +10,7 @@ A web-based dual CLI session streaming application built with Go and GoTTY. This
 - ✏️ **Interactive**: Full input support for both terminals
 - 🎨 **Modern UI**: Clean, professional interface with VS Code-inspired styling
 - 🔄 **Auto-Reconnect**: Terminals automatically reconnect if connection is lost
+- 🤖 **Claude Code Integration**: Configurable MCP servers for AI-powered development (Playwright, Linear, GitHub)
 
 ## Screenshots
 

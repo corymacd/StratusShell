@@ -191,6 +191,17 @@ StratusShell uses a feature-based package architecture:
 - Command filtering with allow/deny/ask lists
 - Security validation for allowed commands
 - Audit logging for all command executions
+- MCP server support for Playwright, Linear, and GitHub
+- Automatic MCP installation during user provisioning
+- Settings file at `~/.claude/settings.json`
+
+**MCP Servers**:
+- **Playwright**: Browser automation and testing (`@playwright/mcp`)
+- **Linear**: Project management integration (`@mseep/linear-mcp`)
+- **GitHub**: Repository operations (`github-mcp-server`)
+- Configured in `claude.mcp_servers` section of YAML
+- Installed globally via npm during provisioning
+- See `docs/CLAUDE_MCP.md` for detailed documentation
 
 ## Worktree Directory
 
