@@ -50,10 +50,10 @@ func CreateUser(username, shell string) error {
 	// Create user with home directory
 	// Use "--" to prevent username from being interpreted as a flag (prevents injection)
 	cmd := exec.Command("useradd",
-		"-m",                      // Create home directory
-		"-s", shell,               // Set shell
+		"-m",        // Create home directory
+		"-s", shell, // Set shell
 		"-c", "StratusShell User", // Comment
-		"--",                      // End of options
+		"--", // End of options
 		username,
 	)
 

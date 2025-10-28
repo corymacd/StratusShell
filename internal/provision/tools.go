@@ -195,10 +195,10 @@ func (p *Provisioner) InstallCloudTools() error {
 // installAWSCLI installs AWS CLI
 func (p *Provisioner) installAWSCLI() error {
 	log.Println("Installing AWS CLI...")
-	
+
 	// Try to install via package manager
 	err := p.pm.Install("awscli")
-	
+
 	auditLogger.Log(audit.Entry{
 		Action:  audit.ActionToolInstall,
 		Actor:   "system",
@@ -209,14 +209,14 @@ func (p *Provisioner) installAWSCLI() error {
 		},
 		Error: audit.ErrorString(err),
 	})
-	
+
 	return err
 }
 
 // installDocker installs Docker
 func (p *Provisioner) installDocker() error {
 	log.Println("Installing Docker...")
-	
+
 	// Try different package names based on package manager
 	var err error
 	if p.pm == APT {
@@ -250,9 +250,9 @@ func (p *Provisioner) installDocker() error {
 // installKubectl installs kubectl
 func (p *Provisioner) installKubectl() error {
 	log.Println("Installing kubectl...")
-	
+
 	err := p.pm.Install("kubectl")
-	
+
 	auditLogger.Log(audit.Entry{
 		Action:  audit.ActionToolInstall,
 		Actor:   "system",
@@ -263,16 +263,16 @@ func (p *Provisioner) installKubectl() error {
 		},
 		Error: audit.ErrorString(err),
 	})
-	
+
 	return err
 }
 
 // installTerraform installs Terraform
 func (p *Provisioner) installTerraform() error {
 	log.Println("Installing Terraform...")
-	
+
 	err := p.pm.Install("terraform")
-	
+
 	auditLogger.Log(audit.Entry{
 		Action:  audit.ActionToolInstall,
 		Actor:   "system",
@@ -283,16 +283,16 @@ func (p *Provisioner) installTerraform() error {
 		},
 		Error: audit.ErrorString(err),
 	})
-	
+
 	return err
 }
 
 // installGCloud installs Google Cloud SDK
 func (p *Provisioner) installGCloud() error {
 	log.Println("Installing gcloud...")
-	
+
 	err := p.pm.Install("google-cloud-sdk")
-	
+
 	auditLogger.Log(audit.Entry{
 		Action:  audit.ActionToolInstall,
 		Actor:   "system",
@@ -303,7 +303,7 @@ func (p *Provisioner) installGCloud() error {
 		},
 		Error: audit.ErrorString(err),
 	})
-	
+
 	return err
 }
 

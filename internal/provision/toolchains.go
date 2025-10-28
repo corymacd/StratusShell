@@ -130,9 +130,9 @@ export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
 		Target:  p.username,
 		Outcome: audit.OutcomeSuccess,
 		Details: map[string]interface{}{
-			"tool":       "golang",
-			"go_tools":   p.config.Languages.Go.Tools,
-			"env_file":   envFile,
+			"tool":     "golang",
+			"go_tools": p.config.Languages.Go.Tools,
+			"env_file": envFile,
 		},
 	})
 

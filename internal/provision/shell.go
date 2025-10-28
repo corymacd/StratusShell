@@ -86,7 +86,7 @@ func (p *Provisioner) installTmux() error {
 	log.Println("Installing tmux...")
 
 	err := p.pm.Install("tmux")
-	
+
 	auditLogger.Log(audit.Entry{
 		Action:  audit.ActionToolInstall,
 		Actor:   "system",
@@ -226,9 +226,9 @@ func (p *Provisioner) configureShellRC() error {
 
 // contains checks if a string contains a substring
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && 
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || 
-		findSubstring(s, substr)))
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
+		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
+			findSubstring(s, substr)))
 }
 
 // findSubstring searches for a substring within a string
