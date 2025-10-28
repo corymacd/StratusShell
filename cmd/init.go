@@ -19,10 +19,22 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("init command must be run as root (use sudo)")
 		}
 
-		username, _ := cmd.Flags().GetString("user")
-		shell, _ := cmd.Flags().GetString("shell")
-		configPath, _ := cmd.Flags().GetString("config")
-		skipTools, _ := cmd.Flags().GetBool("skip-tools")
+		username, err := cmd.Flags().GetString("user")
+		if err != nil {
+			return fmt.Errorf("failed to get user flag: %w", err)
+		}
+		shell, err := cmd.Flags().GetString("shell")
+		if err != nil {
+			return fmt.Errorf("failed to get shell flag: %w", err)
+		}
+		configPath, err := cmd.Flags().GetString("config")
+		if err != nil {
+			return fmt.Errorf("failed to get config flag: %w", err)
+		}
+		skipTools, err := cmd.Flags().GetBool("skip-tools")
+		if err != nil {
+			return fmt.Errorf("failed to get skip-tools flag: %w", err)
+		}
 
 		log.Printf("Provisioning user: %s", username)
 
@@ -48,7 +60,10 @@ var initCmd = &cobra.Command{
 		if err := provision.ConfigurePasswordlessSudo(username); err != nil {
 			// Rollback user creation
 			log.Printf("Sudo configuration failed, rolling back user creation...")
-			provision.DeleteUser(username)
+			if delErr := provision.DeleteUser(username); delErr != nil {
+				log.Printf("ERROR: Failed to rollback user creation: %v", delErr)
+				log.Printf("Please manually remove user '%s' with: sudo userdel -r %s", username, username)
+			}
 			return fmt.Errorf("failed to configure sudo: %w", err)
 		}
 
@@ -61,9 +76,11 @@ var initCmd = &cobra.Command{
 		// Create provisioner
 		p, err := provision.NewProvisioner(username, config)
 		if err != nil {
-			log.Printf("Warning: failed to create provisioner: %v", err)
-			log.Println("User created but tool installation skipped")
-			return nil
+			log.Printf("ERROR: Failed to create provisioner: %v", err)
+			log.Printf("User '%s' was created but tool installation will be skipped", username)
+			log.Println("You may need to manually install tools or run provisioning again")
+			// Return error to indicate partial failure
+			return fmt.Errorf("provisioner creation failed: %w", err)
 		}
 
 		// Install base packages
