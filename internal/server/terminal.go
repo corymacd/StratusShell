@@ -26,19 +26,23 @@ type Terminal struct {
 }
 
 type TerminalManager struct {
-	terminals map[int]*Terminal
-	portPool  *PortPool
-	db        *db.DB
-	mu        sync.RWMutex
-	nextID    int
+	terminals    map[int]*Terminal
+	portPool     *PortPool
+	db           *db.DB
+	mu           sync.RWMutex
+	nextID       int
+	maxTerminals int
+	activeTabID  int // Track the currently active tab
 }
 
 func NewTerminalManager(db *db.DB) *TerminalManager {
 	return &TerminalManager{
-		terminals: make(map[int]*Terminal),
-		portPool:  NewPortPool(8081, 8181),
-		db:        db,
-		nextID:    1,
+		terminals:    make(map[int]*Terminal),
+		portPool:     NewPortPool(0, 0), // Use ephemeral ports
+		db:           db,
+		nextID:       1,
+		maxTerminals: 10, // Maximum 10 concurrent terminals
+		activeTabID:  0,  // No active tab initially
 	}
 }
 
@@ -55,6 +59,17 @@ func generateCredential() (string, error) {
 }
 
 func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Terminal, error) {
+	// First check if we've reached the maximum without holding the lock for long operations
+	tm.mu.Lock()
+	if len(tm.terminals) >= tm.maxTerminals {
+		tm.mu.Unlock()
+		return nil, fmt.Errorf("maximum number of terminals (%d) reached", tm.maxTerminals)
+	}
+	// Reserve a spot by incrementing count
+	terminalID := tm.nextID
+	tm.nextID++
+	tm.mu.Unlock()
+
 	port, err := tm.portPool.Allocate()
 	if err != nil {
 		return nil, fmt.Errorf("failed to allocate port: %w", err)
@@ -75,11 +90,6 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 		return nil, fmt.Errorf("failed to start gotty server: %w", err)
 	}
 
-	tm.mu.Lock()
-	terminalID := tm.nextID
-	tm.nextID++
-	tm.mu.Unlock()
-
 	terminal := &Terminal{
 		ID:          terminalID,
 		Port:        port,
@@ -99,9 +109,15 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 		terminal.DBID = dbID
 	}
 
+	// Now hold the lock to add terminal and update active tab atomically
 	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	
 	tm.terminals[terminal.ID] = terminal
-	tm.mu.Unlock()
+	// Set as active tab if it's the first terminal or no active tab
+	if tm.activeTabID == 0 || len(tm.terminals) == 1 {
+		tm.activeTabID = terminal.ID
+	}
 
 	return terminal, nil
 }
@@ -114,6 +130,26 @@ func (tm *TerminalManager) KillTerminal(id int) error {
 		return errors.New("terminal not found")
 	}
 	delete(tm.terminals, id)
+	
+	// If we're closing the active tab, switch to another tab deterministically
+	if tm.activeTabID == id {
+		// Find the terminal with the next highest ID, or the lowest if none exists
+		nextID := 0
+		lowestID := 0
+		for tid := range tm.terminals {
+			if tid > id && (nextID == 0 || tid < nextID) {
+				nextID = tid
+			}
+			if lowestID == 0 || tid < lowestID {
+				lowestID = tid
+			}
+		}
+		if nextID != 0 {
+			tm.activeTabID = nextID
+		} else {
+			tm.activeTabID = lowestID
+		}
+	}
 	tm.mu.Unlock()
 
 	// Stop GoTTY server gracefully
@@ -150,6 +186,18 @@ func (tm *TerminalManager) GetTerminal(id int) (*Terminal, bool) {
 	defer tm.mu.RUnlock()
 	t, ok := tm.terminals[id]
 	return t, ok
+}
+
+func (tm *TerminalManager) GetActiveTabID() int {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.activeTabID
+}
+
+func (tm *TerminalManager) SetActiveTabID(id int) {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	tm.activeTabID = id
 }
 
 func (tm *TerminalManager) GetNextID() int {

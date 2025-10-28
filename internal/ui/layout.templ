@@ -12,8 +12,8 @@ templ Layout(user string) {
 	</head>
 	<body>
 		@Menubar()
-		<div id="terminal-container" hx-get="/api/layout" hx-trigger="load">
-			<!-- Terminals loaded here -->
+		<div id="tab-container" hx-get="/api/tabs" hx-trigger="load">
+			<!-- Tabs loaded here -->
 		</div>
 		<div id="modal"></div>
 	</body>

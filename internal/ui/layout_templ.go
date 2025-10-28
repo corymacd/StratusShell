@@ -50,7 +50,7 @@ func Layout(user string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div id=\"terminal-container\" hx-get=\"/api/layout\" hx-trigger=\"load\"><!-- Terminals loaded here --></div><div id=\"modal\"></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div id=\"tab-container\" hx-get=\"/api/tabs\" hx-trigger=\"load\"><!-- Tabs loaded here --></div><div id=\"modal\"></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

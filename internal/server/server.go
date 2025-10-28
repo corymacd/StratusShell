@@ -94,15 +94,19 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	// Main page - requires auth + rate limiting
 	mux.HandleFunc("/", s.rateLimiter.Limit(s.AuthMiddleware(s.handleIndex)))
 
-	// API routes - all require auth + rate limiting + CSRF protection for state changes
+	// Tab-based API routes - new primary interface
+	mux.HandleFunc("/api/tabs", s.rateLimiter.Limit(s.AuthMiddleware(s.handleGetTabs)))
+	mux.HandleFunc("/api/tabs/switch/", s.rateLimiter.Limit(s.AuthMiddleware(s.handleSwitchTab)))
+	mux.HandleFunc("/api/terminals/add", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleAddTerminalTab))))
+	mux.HandleFunc("/api/terminal/", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleTerminalAction))))
+
+	// Legacy layout API routes - kept for backward compatibility
 	mux.HandleFunc("/api/layout", s.rateLimiter.Limit(s.AuthMiddleware(s.handleGetLayout)))
 	mux.HandleFunc("/api/layout/horizontal", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLayoutHorizontal))))
 	mux.HandleFunc("/api/layout/vertical", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLayoutVertical))))
 	mux.HandleFunc("/api/layout/grid", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLayoutGrid))))
 
-	mux.HandleFunc("/api/terminals/add", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleAddTerminal))))
-	mux.HandleFunc("/api/terminal/", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleTerminalAction))))
-
+	// Session API routes
 	mux.HandleFunc("/api/session/save-modal", s.rateLimiter.Limit(s.AuthMiddleware(s.handleSaveSessionModal)))
 	mux.HandleFunc("/api/session/save", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleSaveSession))))
 	mux.HandleFunc("/api/session/list-modal", s.rateLimiter.Limit(s.AuthMiddleware(s.handleListSessionsModal)))
@@ -187,43 +191,35 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleTerminalProxy(w http.ResponseWriter, r *http.Request) {
-	// Extract port from path: /term/{port}/...
+	// Extract terminal ID from path: /term/{id}/...
 	path := strings.TrimPrefix(r.URL.Path, "/term/")
 	parts := strings.Split(path, "/")
 	if len(parts) == 0 || parts[0] == "" {
-		http.Error(w, "Invalid terminal port", http.StatusBadRequest)
+		http.Error(w, "Invalid terminal ID", http.StatusBadRequest)
 		return
 	}
 
-	port, err := strconv.Atoi(parts[0])
+	terminalID, err := strconv.Atoi(parts[0])
 	if err != nil {
-		http.Error(w, "Invalid terminal port", http.StatusBadRequest)
+		http.Error(w, "Invalid terminal ID", http.StatusBadRequest)
 		return
 	}
 
-	// Find terminal by port to get credential
-	var credential string
-	terminals := s.terminalManager.GetTerminals()
-	for _, t := range terminals {
-		if t.Port == port {
-			credential = t.Credential
-			break
-		}
-	}
-
-	if credential == "" {
+	// Find terminal by ID to get port and credential
+	terminal, ok := s.terminalManager.GetTerminal(terminalID)
+	if !ok {
 		http.Error(w, "Terminal not found", http.StatusNotFound)
 		return
 	}
 
 	// Create reverse proxy to localhost:{port}
-	target, err := url.Parse(fmt.Sprintf("http://localhost:%d", port))
+	target, err := url.Parse(fmt.Sprintf("http://localhost:%d", terminal.Port))
 	if err != nil {
 		http.Error(w, "Invalid proxy target", http.StatusInternalServerError)
 		return
 	}
 
-	// Strip /term/{port} prefix and proxy to target
+	// Strip /term/{id} prefix and proxy to target
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
 	// Modify request to add Basic Auth header
@@ -231,10 +227,10 @@ func (s *Server) handleTerminalProxy(w http.ResponseWriter, r *http.Request) {
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
 		// Add Basic Auth using the terminal's credential
-		req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(credential)))
+		req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(terminal.Credential)))
 	}
 
-	r.URL.Path = strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/term/%d", port))
+	r.URL.Path = strings.TrimPrefix(r.URL.Path, fmt.Sprintf("/term/%d", terminalID))
 	if r.URL.Path == "" {
 		r.URL.Path = "/"
 	}
