@@ -307,8 +307,8 @@ go test ./internal/provision -v -run TestLoadConfigWithMCPServers
 
 ## References
 
-- [Model Context Protocol Documentation](https://modelcontextprotocol.io/)
-- [Claude Code Documentation](https://docs.anthropic.com/)
+- [Model Context Protocol - GitHub](https://github.com/modelcontextprotocol)
+- [Claude Code - Official Site](https://claude.ai/code)
 - [Playwright MCP](https://www.npmjs.com/package/@playwright/mcp)
 - [Linear MCP](https://www.npmjs.com/package/@mseep/linear-mcp)
 - [GitHub MCP Server](https://www.npmjs.com/package/github-mcp-server)
