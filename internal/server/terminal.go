@@ -32,6 +32,7 @@ type TerminalManager struct {
 	mu           sync.RWMutex
 	nextID       int
 	maxTerminals int
+	activeTabID  int // Track the currently active tab
 }
 
 func NewTerminalManager(db *db.DB) *TerminalManager {
@@ -41,6 +42,7 @@ func NewTerminalManager(db *db.DB) *TerminalManager {
 		db:           db,
 		nextID:       1,
 		maxTerminals: 10, // Maximum 10 concurrent terminals
+		activeTabID:  0,  // No active tab initially
 	}
 }
 
@@ -111,6 +113,10 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 
 	tm.mu.Lock()
 	tm.terminals[terminal.ID] = terminal
+	// Set as active tab if it's the first terminal or no active tab
+	if tm.activeTabID == 0 || len(tm.terminals) == 1 {
+		tm.activeTabID = terminal.ID
+	}
 	tm.mu.Unlock()
 
 	return terminal, nil
@@ -124,6 +130,16 @@ func (tm *TerminalManager) KillTerminal(id int) error {
 		return errors.New("terminal not found")
 	}
 	delete(tm.terminals, id)
+	
+	// If we're closing the active tab, switch to another tab
+	if tm.activeTabID == id {
+		// Find another terminal to make active
+		tm.activeTabID = 0
+		for _, t := range tm.terminals {
+			tm.activeTabID = t.ID
+			break
+		}
+	}
 	tm.mu.Unlock()
 
 	// Stop GoTTY server gracefully
@@ -160,6 +176,18 @@ func (tm *TerminalManager) GetTerminal(id int) (*Terminal, bool) {
 	defer tm.mu.RUnlock()
 	t, ok := tm.terminals[id]
 	return t, ok
+}
+
+func (tm *TerminalManager) GetActiveTabID() int {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+	return tm.activeTabID
+}
+
+func (tm *TerminalManager) SetActiveTabID(id int) {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	tm.activeTabID = id
 }
 
 func (tm *TerminalManager) GetNextID() int {

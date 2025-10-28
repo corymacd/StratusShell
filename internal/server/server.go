@@ -94,15 +94,19 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	// Main page - requires auth + rate limiting
 	mux.HandleFunc("/", s.rateLimiter.Limit(s.AuthMiddleware(s.handleIndex)))
 
-	// API routes - all require auth + rate limiting + CSRF protection for state changes
+	// Tab-based API routes - new primary interface
+	mux.HandleFunc("/api/tabs", s.rateLimiter.Limit(s.AuthMiddleware(s.handleGetTabs)))
+	mux.HandleFunc("/api/tabs/switch/", s.rateLimiter.Limit(s.AuthMiddleware(s.handleSwitchTab)))
+	mux.HandleFunc("/api/terminals/add", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleAddTerminalTab))))
+	mux.HandleFunc("/api/terminal/", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleTerminalAction))))
+
+	// Legacy layout API routes - kept for backward compatibility
 	mux.HandleFunc("/api/layout", s.rateLimiter.Limit(s.AuthMiddleware(s.handleGetLayout)))
 	mux.HandleFunc("/api/layout/horizontal", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLayoutHorizontal))))
 	mux.HandleFunc("/api/layout/vertical", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLayoutVertical))))
 	mux.HandleFunc("/api/layout/grid", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleLayoutGrid))))
 
-	mux.HandleFunc("/api/terminals/add", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleAddTerminal))))
-	mux.HandleFunc("/api/terminal/", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleTerminalAction))))
-
+	// Session API routes
 	mux.HandleFunc("/api/session/save-modal", s.rateLimiter.Limit(s.AuthMiddleware(s.handleSaveSessionModal)))
 	mux.HandleFunc("/api/session/save", s.rateLimiter.Limit(s.AuthMiddleware(s.csrfProtection.Protect(s.handleSaveSession))))
 	mux.HandleFunc("/api/session/list-modal", s.rateLimiter.Limit(s.AuthMiddleware(s.handleListSessionsModal)))

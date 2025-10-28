@@ -1,0 +1,57 @@
+package ui
+
+import "fmt"
+
+templ TabBar(terminals []TerminalData, activeTabID int) {
+	<div class="tab-bar">
+		<div class="tabs">
+			for _, t := range terminals {
+				<div class={ "tab", templ.KV("tab-active", t.ID == activeTabID) }
+					hx-post={ fmt.Sprintf("/api/tabs/switch/%d", t.ID) }
+					hx-target="#active-terminal"
+					hx-swap="innerHTML">
+					<form hx-post={ fmt.Sprintf("/api/terminal/%d/rename", t.ID) }
+						hx-trigger="blur from:[name='title']"
+						hx-swap="none"
+						class="tab-title-form">
+						<input type="text" name="title" value={ t.Title } class="tab-title"/>
+					</form>
+					<button class="tab-close"
+						hx-delete={ fmt.Sprintf("/api/terminal/%d", t.ID) }
+						hx-target="#tab-container"
+						hx-swap="innerHTML"
+						onclick="event.stopPropagation()">×</button>
+				</div>
+			}
+			if len(terminals) < 10 {
+				<button class="tab-new"
+					hx-post="/api/terminals/add"
+					hx-target="#tab-container"
+					hx-swap="innerHTML"
+					title="New Terminal (max 10)">+</button>
+			}
+		</div>
+	</div>
+}
+
+templ ActiveTerminal(id int) {
+	<iframe src={ fmt.Sprintf("/term/%d/", id) } class="terminal-frame" id={ fmt.Sprintf("terminal-%d", id) }></iframe>
+}
+
+templ TabContainer(terminals []TerminalData, activeTabID int) {
+	@TabBar(terminals, activeTabID)
+	<div id="active-terminal" class="active-terminal">
+		if len(terminals) > 0 {
+			if activeTabID > 0 {
+				@ActiveTerminal(activeTabID)
+			} else if len(terminals) > 0 {
+				@ActiveTerminal(terminals[0].ID)
+			}
+		} else {
+			<div class="empty-state">
+				<p>No terminals open</p>
+				<button hx-post="/api/terminals/add" hx-target="#tab-container" hx-swap="innerHTML">Create Terminal</button>
+			</div>
+		}
+	</div>
+}

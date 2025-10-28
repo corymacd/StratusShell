@@ -120,7 +120,9 @@ func (s *Server) handleTerminalAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.auditLogger.LogTerminalKill(actor, id, audit.OutcomeSuccess, nil)
-		w.WriteHeader(http.StatusOK)
+		
+		// Return updated tab container for tab-based UI
+		s.handleGetTabs(w, r)
 
 	case http.MethodPost:
 		if len(parts) > 1 && parts[1] == "rename" {
@@ -342,6 +344,95 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to login
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
+
+// handleGetTabs returns the tab container with all terminals
+func (s *Server) handleGetTabs(w http.ResponseWriter, r *http.Request) {
+	terminals := s.terminalManager.GetTerminals()
+	activeTabID := s.terminalManager.GetActiveTabID()
+
+	// Convert to template data
+	termData := make([]ui.TerminalData, len(terminals))
+	for i, t := range terminals {
+		termData[i] = ui.TerminalData{
+			ID:    t.ID,
+			Title: t.Title,
+		}
+	}
+
+	ui.TabContainer(termData, activeTabID).Render(r.Context(), w)
+}
+
+// handleSwitchTab switches the active tab
+func (s *Server) handleSwitchTab(w http.ResponseWriter, r *http.Request) {
+	// Extract terminal ID from path: /api/tabs/switch/{id}
+	path := strings.TrimPrefix(r.URL.Path, "/api/tabs/switch/")
+	terminalID, err := strconv.Atoi(path)
+	if err != nil {
+		http.Error(w, "Invalid terminal ID", http.StatusBadRequest)
+		return
+	}
+
+	// Validate terminal exists
+	if _, ok := s.terminalManager.GetTerminal(terminalID); !ok {
+		http.Error(w, "Terminal not found", http.StatusNotFound)
+		return
+	}
+
+	// Set as active tab
+	s.terminalManager.SetActiveTabID(terminalID)
+
+	// Return just the terminal iframe
+	ui.ActiveTerminal(terminalID).Render(r.Context(), w)
+}
+
+// handleAddTerminalTab adds a new terminal and returns the updated tab container
+func (s *Server) handleAddTerminalTab(w http.ResponseWriter, r *http.Request) {
+	actor := s.getActor(r)
+	terminals := s.terminalManager.GetTerminals()
+	title := fmt.Sprintf("Terminal %d", len(terminals)+1)
+
+	terminal, err := s.terminalManager.SpawnTerminal(title, "/bin/bash", "")
+	if err != nil {
+		s.auditLogger.LogTerminalSpawn(actor, -1, title, audit.OutcomeFailure, err)
+		s.handleError(w, r, err, "Failed to add terminal")
+		return
+	}
+
+	s.auditLogger.LogTerminalSpawn(actor, terminal.ID, title, audit.OutcomeSuccess, nil)
+	
+	// Return updated tab container
+	s.handleGetTabs(w, r)
+}
+
+// handleDeleteTerminalTab deletes a terminal and returns the updated tab container
+func (s *Server) handleDeleteTerminalTab(w http.ResponseWriter, r *http.Request) {
+	actor := s.getActor(r)
+
+	// Extract terminal ID from path
+	path := strings.TrimPrefix(r.URL.Path, "/api/terminal/")
+	parts := strings.Split(path, "/")
+	if len(parts) == 0 {
+		http.Error(w, "Invalid terminal ID", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(parts[0])
+	if err != nil {
+		http.Error(w, "Invalid terminal ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.terminalManager.KillTerminal(id); err != nil {
+		s.auditLogger.LogTerminalKill(actor, id, audit.OutcomeFailure, err)
+		s.handleError(w, r, err, "Failed to delete terminal")
+		return
+	}
+	
+	s.auditLogger.LogTerminalKill(actor, id, audit.OutcomeSuccess, nil)
+
+	// Return updated tab container
+	s.handleGetTabs(w, r)
 }
 
 func (s *Server) handleError(w http.ResponseWriter, r *http.Request, err error, userMsg string) {
