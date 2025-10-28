@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"text/template"
 )
@@ -52,6 +53,37 @@ func getBinaryPath() string {
 	return binaryPath
 }
 
+func getUserHomeDir(username string) (string, error) {
+	u, err := user.Lookup(username)
+	if err != nil {
+		return "", fmt.Errorf("failed to lookup user %q: %w", username, err)
+	}
+	return u.HomeDir, nil
+}
+
+func validateServiceConfig(config ServiceConfig) error {
+	// Validate username - should not contain special characters that could cause issues
+	if config.User == "" {
+		return fmt.Errorf("username cannot be empty")
+	}
+	
+	// Validate port range
+	if config.Port < 1 || config.Port > 65535 {
+		return fmt.Errorf("port must be between 1 and 65535, got %d", config.Port)
+	}
+	
+	// Validate paths exist
+	if config.HomeDir == "" {
+		return fmt.Errorf("home directory cannot be empty")
+	}
+	
+	if config.BinaryPath == "" {
+		return fmt.Errorf("binary path cannot be empty")
+	}
+	
+	return nil
+}
+
 func parseServiceTemplate() (*template.Template, error) {
 	return template.New("service").Parse(serviceTemplate)
 }
@@ -65,8 +97,11 @@ func generateServiceContent(tmpl *template.Template, config ServiceConfig) (stri
 }
 
 func InstallSystemdService(username string, port int) error {
-	// Get user home directory
-	homeDir := fmt.Sprintf("/home/%s", username)
+	// Get user home directory from the system
+	homeDir, err := getUserHomeDir(username)
+	if err != nil {
+		return err
+	}
 
 	// Get current binary path
 	binaryPath := getBinaryPath()
@@ -76,6 +111,11 @@ func InstallSystemdService(username string, port int) error {
 		HomeDir:    homeDir,
 		BinaryPath: binaryPath,
 		Port:       port,
+	}
+
+	// Validate configuration
+	if err := validateServiceConfig(config); err != nil {
+		return fmt.Errorf("invalid service configuration: %w", err)
 	}
 
 	// Generate service file

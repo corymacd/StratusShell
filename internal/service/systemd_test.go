@@ -90,3 +90,107 @@ func TestGetBinaryPath(t *testing.T) {
 		}
 	}
 }
+
+func TestGetUserHomeDir(t *testing.T) {
+	// Test with current user
+	currentUser := os.Getenv("USER")
+	if currentUser == "" {
+		t.Skip("USER environment variable not set, skipping test")
+	}
+	
+	homeDir, err := getUserHomeDir(currentUser)
+	if err != nil {
+		t.Fatalf("Failed to get home directory for current user %q: %v", currentUser, err)
+	}
+	
+	if homeDir == "" {
+		t.Error("Home directory should not be empty")
+	}
+	
+	// Test with non-existent user
+	_, err = getUserHomeDir("nonexistent-user-12345")
+	if err == nil {
+		t.Error("Expected error for non-existent user, got nil")
+	}
+}
+
+func TestValidateServiceConfig(t *testing.T) {
+	tests := []struct {
+		name      string
+		config    ServiceConfig
+		expectErr bool
+	}{
+		{
+			name: "valid config",
+			config: ServiceConfig{
+				User:       "testuser",
+				HomeDir:    "/home/testuser",
+				BinaryPath: "/usr/local/bin/stratusshell",
+				Port:       8080,
+			},
+			expectErr: false,
+		},
+		{
+			name: "empty username",
+			config: ServiceConfig{
+				User:       "",
+				HomeDir:    "/home/testuser",
+				BinaryPath: "/usr/local/bin/stratusshell",
+				Port:       8080,
+			},
+			expectErr: true,
+		},
+		{
+			name: "invalid port - too low",
+			config: ServiceConfig{
+				User:       "testuser",
+				HomeDir:    "/home/testuser",
+				BinaryPath: "/usr/local/bin/stratusshell",
+				Port:       0,
+			},
+			expectErr: true,
+		},
+		{
+			name: "invalid port - too high",
+			config: ServiceConfig{
+				User:       "testuser",
+				HomeDir:    "/home/testuser",
+				BinaryPath: "/usr/local/bin/stratusshell",
+				Port:       65536,
+			},
+			expectErr: true,
+		},
+		{
+			name: "empty home directory",
+			config: ServiceConfig{
+				User:       "testuser",
+				HomeDir:    "",
+				BinaryPath: "/usr/local/bin/stratusshell",
+				Port:       8080,
+			},
+			expectErr: true,
+		},
+		{
+			name: "empty binary path",
+			config: ServiceConfig{
+				User:       "testuser",
+				HomeDir:    "/home/testuser",
+				BinaryPath: "",
+				Port:       8080,
+			},
+			expectErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateServiceConfig(tt.config)
+			if tt.expectErr && err == nil {
+				t.Error("Expected error but got nil")
+			}
+			if !tt.expectErr && err != nil {
+				t.Errorf("Expected no error but got: %v", err)
+			}
+		})
+	}
+}
