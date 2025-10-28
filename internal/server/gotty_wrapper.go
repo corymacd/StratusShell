@@ -39,7 +39,7 @@ func NewGoTTYServer(ctx context.Context, port int, credential, title, shell, wor
 
 	// Build command with working directory
 	command := shell
-	args := []string{}
+	var args []string
 	if workingDir != "" {
 		// Wrap shell to cd into working directory first
 		command = "sh"
@@ -47,7 +47,7 @@ func NewGoTTYServer(ctx context.Context, port int, credential, title, shell, wor
 	}
 
 	// Create factory for local command
-	factory, err := localcommand.NewFactory(command, args, nil)
+	factory, err := localcommand.NewFactory(command, args, &localcommand.Options{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create command factory: %w", err)
 	}
