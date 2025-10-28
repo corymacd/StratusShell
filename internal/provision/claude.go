@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/corymacd/StratusShell/internal/audit"
 	"github.com/corymacd/StratusShell/internal/validation"
@@ -178,6 +179,7 @@ func (p *Provisioner) InstallMCPServers() error {
 
 	installed := 0
 	failed := 0
+	var installErrors []string
 
 	for _, mcpServer := range p.config.Claude.MCPServers {
 		if mcpServer.Package == "" {
@@ -189,16 +191,22 @@ func (p *Provisioner) InstallMCPServers() error {
 		if err := p.installMCPServer(mcpServer); err != nil {
 			log.Printf("Warning: failed to install %s: %v", mcpServer.Name, err)
 			failed++
+			installErrors = append(installErrors, fmt.Sprintf("%s: %v", mcpServer.Name, err))
 		} else {
 			installed++
 		}
+	}
+
+	outcome := audit.OutcomeSuccess
+	if failed > 0 {
+		outcome = audit.OutcomeFailure
 	}
 
 	auditLogger.Log(audit.Entry{
 		Action:  audit.ActionToolInstall,
 		Actor:   "system",
 		Target:  p.username,
-		Outcome: audit.OutcomeSuccess,
+		Outcome: outcome,
 		Details: map[string]interface{}{
 			"stage":     "mcp_servers",
 			"installed": installed,
@@ -208,6 +216,11 @@ func (p *Provisioner) InstallMCPServers() error {
 	})
 
 	log.Printf("Installed %d/%d MCP servers", installed, len(p.config.Claude.MCPServers))
+	
+	if failed > 0 {
+		return fmt.Errorf("failed to install %d MCP server(s): %s", failed, strings.Join(installErrors, "; "))
+	}
+	
 	return nil
 }
 
@@ -215,54 +228,38 @@ func (p *Provisioner) InstallMCPServers() error {
 func (p *Provisioner) installMCPServer(server MCPServerInstall) error {
 	// Validate package name to prevent command injection
 	if err := validation.ValidateNpmPackage(server.Package); err != nil {
-		auditLogger.Log(audit.Entry{
-			Action:  audit.ActionToolInstall,
-			Actor:   "system",
-			Target:  p.username,
-			Outcome: audit.OutcomeFailure,
-			Error:   fmt.Sprintf("invalid package name: %v", err),
-			Details: map[string]interface{}{
-				"mcp_server": server.Name,
-				"package":    server.Package,
-			},
-		})
 		return fmt.Errorf("invalid package name: %w", err)
 	}
 
-	auditLogger.Log(audit.Entry{
-		Action:  audit.ActionToolInstall,
-		Actor:   "system",
-		Target:  p.username,
-		Details: map[string]interface{}{
-			"mcp_server": server.Name,
-			"package":    server.Package,
-		},
-	})
-
-	// Execute npm install -g <package> and capture output
-	cmd := exec.Command("npm", "install", "-g", server.Package)
-	output, err := cmd.CombinedOutput()
-
-	// Log the outcome with output details for troubleshooting
+	// Setup audit logging with defer for atomicity
 	logDetails := map[string]interface{}{
 		"mcp_server": server.Name,
 		"package":    server.Package,
 	}
-	if len(output) > 0 {
-		logDetails["output"] = string(output)
-	}
+	var installErr error
+	var output []byte
 
-	auditLogger.Log(audit.Entry{
-		Action:  audit.ActionToolInstall,
-		Actor:   "system",
-		Target:  p.username,
-		Outcome: audit.OutcomeFromError(err),
-		Details: logDetails,
-		Error:   audit.ErrorString(err),
-	})
+	defer func() {
+		if len(output) > 0 {
+			logDetails["output"] = string(output)
+		}
+		auditLogger.Log(audit.Entry{
+			Action:  audit.ActionToolInstall,
+			Actor:   "system",
+			Target:  p.username,
+			Outcome: audit.OutcomeFromError(installErr),
+			Details: logDetails,
+			Error:   audit.ErrorString(installErr),
+		})
+	}()
 
-	if err != nil {
-		return fmt.Errorf("npm install failed: %w (output: %s)", err, string(output))
+	// Execute npm install -g <package> as the provisioned user using sudo -u
+	// This prevents running npm as root, which is a security best practice
+	cmd := exec.Command("sudo", "-u", p.username, "npm", "install", "-g", server.Package)
+	output, installErr = cmd.CombinedOutput()
+
+	if installErr != nil {
+		return fmt.Errorf("npm install failed: %w (output: %s)", installErr, string(output))
 	}
 
 	return nil
