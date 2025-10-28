@@ -25,7 +25,6 @@ build:
 
 install: build
 	sudo cp stratusshell /usr/local/bin/
-	sudo chmod +x /usr/local/bin/stratusshell
 	sudo mkdir -p /etc/stratusshell
 	sudo cp configs/default.yaml /etc/stratusshell/
 
