@@ -32,6 +32,7 @@ const (
 	ActionUserCreate       ActionType = "provision.user.create"
 	ActionUserDelete       ActionType = "provision.user.delete"
 	ActionUserShellChange  ActionType = "provision.user.shell_change"
+	ActionUserGroupAdd     ActionType = "provision.user.group_add"
 	ActionSudoersConfig    ActionType = "provision.sudoers.config"
 	ActionSudoersRemove    ActionType = "provision.sudoers.remove"
 	ActionChownRecursive   ActionType = "provision.chown_recursive"

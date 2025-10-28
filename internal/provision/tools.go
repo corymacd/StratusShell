@@ -230,7 +230,13 @@ func (p *Provisioner) installDocker() error {
 	}
 
 	if err == nil {
-		log.Printf("Note: User %s may need to be added to docker group manually", p.username)
+		// Add user to docker group
+		if groupErr := AddUserToGroup(p.username, "docker"); groupErr != nil {
+			log.Printf("Warning: failed to add user %s to docker group: %v", p.username, groupErr)
+			log.Printf("Note: User %s may need to be added to docker group manually", p.username)
+		} else {
+			log.Printf("✓ User %s added to docker group (re-login required for changes to take effect)", p.username)
+		}
 	}
 
 	auditLogger.Log(audit.Entry{
