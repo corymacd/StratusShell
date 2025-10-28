@@ -61,10 +61,26 @@ func getUserHomeDir(username string) (string, error) {
 	return u.HomeDir, nil
 }
 
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
+	"regexp"
+	"text/template"
+)
+
+var validUsernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
 func validateServiceConfig(config ServiceConfig) error {
 	// Validate username - should not contain special characters that could cause issues
 	if config.User == "" {
 		return fmt.Errorf("username cannot be empty")
+	}
+	if !validUsernameRegex.MatchString(config.User) {
+		return fmt.Errorf("username contains invalid characters. Only alphanumeric, underscore, and dash are allowed")
 	}
 	
 	// Validate port range
