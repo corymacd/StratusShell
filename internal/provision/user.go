@@ -210,6 +210,68 @@ func GetUserHomeDir(username string) (string, error) {
 	return u.HomeDir, nil
 }
 
+func AddUserToGroup(username, groupname string) error {
+	// Validate username
+	if err := validation.ValidateUsername(username); err != nil {
+		auditLogger.Log(audit.Entry{
+			Action:  audit.ActionUserGroupAdd,
+			Actor:   "system",
+			Target:  username,
+			Outcome: audit.OutcomeFailure,
+			Error:   fmt.Sprintf("username validation failed: %v", err),
+		})
+		return fmt.Errorf("invalid username: %w", err)
+	}
+
+	// Validate groupname
+	if err := validation.ValidateGroupname(groupname); err != nil {
+		auditLogger.Log(audit.Entry{
+			Action:  audit.ActionUserGroupAdd,
+			Actor:   "system",
+			Target:  username,
+			Outcome: audit.OutcomeFailure,
+			Error:   fmt.Sprintf("groupname validation failed: %v", err),
+			Details: map[string]interface{}{
+				"group": groupname,
+			},
+		})
+		return fmt.Errorf("invalid groupname: %w", err)
+	}
+
+	// Use usermod to add user to group
+	// -a: append to group (don't remove from other groups)
+	// -G: supplementary groups
+	// Use "--" to prevent arguments from being interpreted as flags
+	cmd := exec.Command("usermod", "-a", "-G", groupname, "--", username)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		auditLogger.Log(audit.Entry{
+			Action:  audit.ActionUserGroupAdd,
+			Actor:   "system",
+			Target:  username,
+			Outcome: audit.OutcomeFailure,
+			Error:   fmt.Sprintf("usermod command failed: %v", err),
+			Details: map[string]interface{}{
+				"output": string(output),
+				"group":  groupname,
+			},
+		})
+		return fmt.Errorf("failed to add user to group: %w (output: %s)", err, output)
+	}
+
+	// Success - log audit entry
+	auditLogger.Log(audit.Entry{
+		Action:  audit.ActionUserGroupAdd,
+		Actor:   "system",
+		Target:  username,
+		Outcome: audit.OutcomeSuccess,
+		Details: map[string]interface{}{
+			"group": groupname,
+		},
+	})
+
+	return nil
+}
+
 func ChownRecursive(path, username string) error {
 	// Validate username
 	if err := validation.ValidateUsername(username); err != nil {
