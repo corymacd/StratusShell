@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"os/user"
 
-	"github.com/corymacd/cloud-dev-cli-env/internal/audit"
-	"github.com/corymacd/cloud-dev-cli-env/internal/validation"
+	"github.com/corymacd/StratusShell/internal/audit"
+	"github.com/corymacd/StratusShell/internal/validation"
 )
 
 func CreateUser(username, shell string) error {
