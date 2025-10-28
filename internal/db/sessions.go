@@ -94,3 +94,12 @@ func (db *DB) GetSessionTerminals(ctx context.Context, sessionID int) ([]*Sessio
 	}
 	return terminals, rows.Err()
 }
+
+// GetSessionLayoutType retrieves the layout type for a session
+// Currently returns empty string as sessions table doesn't store layout type
+// This causes fallback to default layout logic in handlers
+// TODO: Add layout_type column to sessions table if session-specific layouts are needed
+func (db *DB) GetSessionLayoutType(_ int) (string, error) {
+	// sessionID parameter will be used when the feature is fully implemented
+	return "", nil
+}
