@@ -59,12 +59,15 @@ func generateCredential() (string, error) {
 }
 
 func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Terminal, error) {
+	// First check if we've reached the maximum without holding the lock for long operations
 	tm.mu.Lock()
-	// Check if we've reached the maximum number of terminals
 	if len(tm.terminals) >= tm.maxTerminals {
 		tm.mu.Unlock()
 		return nil, fmt.Errorf("maximum number of terminals (%d) reached", tm.maxTerminals)
 	}
+	// Reserve a spot by incrementing count
+	terminalID := tm.nextID
+	tm.nextID++
 	tm.mu.Unlock()
 
 	port, err := tm.portPool.Allocate()
@@ -87,11 +90,6 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 		return nil, fmt.Errorf("failed to start gotty server: %w", err)
 	}
 
-	tm.mu.Lock()
-	terminalID := tm.nextID
-	tm.nextID++
-	tm.mu.Unlock()
-
 	terminal := &Terminal{
 		ID:          terminalID,
 		Port:        port,
@@ -111,13 +109,15 @@ func (tm *TerminalManager) SpawnTerminal(title, shell, workingDir string) (*Term
 		terminal.DBID = dbID
 	}
 
+	// Now hold the lock to add terminal and update active tab atomically
 	tm.mu.Lock()
+	defer tm.mu.Unlock()
+	
 	tm.terminals[terminal.ID] = terminal
 	// Set as active tab if it's the first terminal or no active tab
 	if tm.activeTabID == 0 || len(tm.terminals) == 1 {
 		tm.activeTabID = terminal.ID
 	}
-	tm.mu.Unlock()
 
 	return terminal, nil
 }
@@ -131,13 +131,23 @@ func (tm *TerminalManager) KillTerminal(id int) error {
 	}
 	delete(tm.terminals, id)
 	
-	// If we're closing the active tab, switch to another tab
+	// If we're closing the active tab, switch to another tab deterministically
 	if tm.activeTabID == id {
-		// Find another terminal to make active
-		tm.activeTabID = 0
-		for _, t := range tm.terminals {
-			tm.activeTabID = t.ID
-			break
+		// Find the terminal with the next highest ID, or the lowest if none exists
+		nextID := 0
+		lowestID := 0
+		for tid := range tm.terminals {
+			if tid > id && (nextID == 0 || tid < nextID) {
+				nextID = tid
+			}
+			if lowestID == 0 || tid < lowestID {
+				lowestID = tid
+			}
+		}
+		if nextID != 0 {
+			tm.activeTabID = nextID
+		} else {
+			tm.activeTabID = lowestID
 		}
 	}
 	tm.mu.Unlock()

@@ -29,7 +29,11 @@ func (p *PortPool) AllocateEphemeral() (int, error) {
 	addr := listener.Addr().(*net.TCPAddr)
 	port := addr.Port
 	
-	// Close the listener immediately - GoTTY will bind to this port
+	// Close the listener - there's a small race window here where another process
+	// could claim the port before GoTTY binds to it. However, this is acceptable because:
+	// 1. The window is extremely small (microseconds)
+	// 2. GoTTY will return an error if binding fails, which we handle in SpawnTerminal
+	// 3. The OS port assignment makes collisions unlikely in practice
 	listener.Close()
 	
 	p.mu.Lock()

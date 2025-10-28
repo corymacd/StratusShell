@@ -44,7 +44,7 @@ templ TabContainer(terminals []TerminalData, activeTabID int) {
 		if len(terminals) > 0 {
 			if activeTabID > 0 {
 				@ActiveTerminal(activeTabID)
-			} else if len(terminals) > 0 {
+			} else {
 				@ActiveTerminal(terminals[0].ID)
 			}
 		} else {

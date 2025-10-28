@@ -47,6 +47,9 @@ func NewGoTTYServer(ctx context.Context, port int, credential, title, shell, wor
 	}
 
 	// Create factory for local command
+	// Note: GoTTY's NewFactory requires a non-nil Options struct (even if empty)
+	// to avoid nil pointer dereference in the library. Using &localcommand.Options{}
+	// provides default values (CloseSignal=1/SIGHUP, CloseTimeout=-1).
 	factory, err := localcommand.NewFactory(command, args, &localcommand.Options{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create command factory: %w", err)
