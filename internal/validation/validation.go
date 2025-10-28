@@ -15,9 +15,6 @@ var (
 	// Session name: alphanumeric, spaces, dashes, underscores (1-100 chars)
 	sessionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9 _-]{1,100}$`)
 
-	// Username: Unix-compliant username (1-32 chars, lowercase, digits, underscore, hyphen)
-	usernameRegex = regexp.MustCompile(`^[a-z_][a-z0-9_-]{0,31}$`)
-
 	// Port number: 1024-65535 (unprivileged ports)
 	portMin = 1024
 	portMax = 65535
@@ -77,33 +74,6 @@ func ValidateSessionDescription(description string) error {
 		return &ValidationError{
 			Field:   "description",
 			Message: "description cannot exceed 500 characters",
-		}
-	}
-
-	return nil
-}
-
-// ValidateUsername validates Unix username
-func ValidateUsername(username string) error {
-	username = strings.TrimSpace(username)
-
-	if username == "" {
-		return &ValidationError{Field: "username", Message: "username cannot be empty"}
-	}
-
-	// Check for path separators (prevent directory traversal)
-	if strings.ContainsAny(username, "/\\") {
-		return &ValidationError{
-			Field:   "username",
-			Message: "username cannot contain path separators",
-		}
-	}
-
-	// Validate against Unix username rules
-	if !usernameRegex.MatchString(username) {
-		return &ValidationError{
-			Field:   "username",
-			Message: "username must start with lowercase letter or underscore, contain only lowercase letters, digits, underscores, and hyphens (max 32 characters)",
 		}
 	}
 

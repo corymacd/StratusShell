@@ -27,14 +27,6 @@ const (
 	// Auth actions
 	ActionAuthLogin  ActionType = "auth.login"
 	ActionAuthLogout ActionType = "auth.logout"
-
-	// User provisioning actions
-	ActionUserCreate       ActionType = "user.create"
-	ActionUserDelete       ActionType = "user.delete"
-	ActionUserShellChange  ActionType = "user.shell_change"
-	ActionSudoersConfig    ActionType = "sudoers.configure"
-	ActionSudoersRemove    ActionType = "sudoers.remove"
-	ActionChownRecursive   ActionType = "chown.recursive"
 )
 
 // Outcome represents the result of an action

@@ -1,0 +1,37 @@
+user:
+  shell: /bin/zsh
+
+base_packages:
+  - git
+  - curl
+  - build-essential
+
+cloud:
+  aws: true
+  gcloud: true
+  kubectl: true
+  docker: true
+  terraform: true
+
+languages:
+  go:
+    enabled: true
+    version: latest
+    tools:
+      - golangci-lint
+      - gopls
+      - delve
+
+  node:
+    enabled: true
+    version: lts
+    package_manager: pnpm
+    global_packages:
+      - typescript
+      - prettier
+      - eslint
+
+shell:
+  zsh: true
+  oh_my_zsh: true
+  tmux: true

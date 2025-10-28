@@ -1,0 +1,35 @@
+package ui
+
+import "fmt"
+
+templ TerminalPane(id int, port int, title string) {
+	<div class="terminal-pane" id={ fmt.Sprintf("terminal-%d", id) }>
+		<div class="terminal-header">
+			<form hx-post={ fmt.Sprintf("/api/terminal/%d/rename", id) }
+				hx-trigger="blur from:[name='title']"
+				hx-swap="none"
+				class="terminal-title-form">
+				<input type="text" name="title" value={ title } class="terminal-title"/>
+			</form>
+			<button class="terminal-close"
+				hx-delete={ fmt.Sprintf("/api/terminal/%d", id) }
+				hx-target={ fmt.Sprintf("#terminal-%d", id) }
+				hx-swap="outerHTML">×</button>
+		</div>
+		<iframe src={ fmt.Sprintf("/term/%d/", port) } class="terminal-frame"></iframe>
+	</div>
+}
+
+templ TerminalContainer(terminals []TerminalData, layoutType string) {
+	<div class={ "terminals", "layout-" + layoutType }>
+		for _, t := range terminals {
+			@TerminalPane(t.ID, t.Port, t.Title)
+		}
+	</div>
+}
+
+type TerminalData struct {
+	ID    int
+	Port  int
+	Title string
+}
