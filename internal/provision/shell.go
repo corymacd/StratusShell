@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/corymacd/StratusShell/internal/audit"
 	"github.com/corymacd/StratusShell/internal/validation"
@@ -166,7 +167,7 @@ func (p *Provisioner) configureShellRC() error {
 		}
 
 		// Check if already configured
-		if contains(string(content), "StratusShell Environment") {
+		if strings.Contains(string(content), "StratusShell Environment") {
 			log.Printf("Shell RC already configured: %s", rcFile)
 			return nil
 		}
@@ -222,21 +223,4 @@ func (p *Provisioner) configureShellRC() error {
 
 	log.Printf("Configured shell RC file: %s", rcFile)
 	return nil
-}
-
-// contains checks if a string contains a substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
-			findSubstring(s, substr)))
-}
-
-// findSubstring searches for a substring within a string
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
